@@ -1,0 +1,25 @@
+meta {
+  name: Compose
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{HOST}}/template/:templateName/compose
+  body: json
+  auth: inherit
+}
+
+params:path {
+  templateName: example2
+}
+
+headers {
+  Accept: application/pdf
+}
+
+body:json {
+  {
+    "username": "John"
+  }
+}

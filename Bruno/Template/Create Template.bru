@@ -1,0 +1,38 @@
+meta {
+  name: Create Template
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{HOST}}/template/create
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  zipfile: @file(/home/skkeeper/src/example2.zip)
+  template_details: '''
+    {
+        "title": "example2",
+        "schema": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "type": "text/html",
+        "metadata": {},
+        "example_composition": {
+            "username": "John Smith"
+            
+        },
+        "tags": ["example"]
+    }
+  '''
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Update Template details
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{HOST}}/template/:templateName/update_details
+  body: json
+  auth: inherit
+}
+
+params:path {
+  templateName: example2
+}
+
+body:json {
+  {
+      "tags": ["example"]
+  }
+}
+
+body:multipart-form {
+  zipfile: @file(/home/skkeeper/src/example2.zip)
+  template_details: '''
+    {
+        "schema": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "type": "text/html",
+        "metadata": {},
+        "example_composition": {
+            "username": "John Smith"
+            
+        },
+        "tags": ["example", "test"]
+    }
+  '''
+}

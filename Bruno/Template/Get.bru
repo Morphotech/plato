@@ -1,0 +1,15 @@
+meta {
+  name: Get
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{HOST}}/template/:templateName
+  body: none
+  auth: inherit
+}
+
+params:path {
+  templateName: example-template
+}
