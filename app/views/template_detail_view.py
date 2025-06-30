@@ -1,11 +1,9 @@
 from typing import NamedTuple, Sequence, TYPE_CHECKING
-from . import swag
 
 if TYPE_CHECKING:
-    from plato.db.models import Template
+    from app.db.models.template import Template
 
 
-@swag.definition("TemplateDetail")
 class TemplateDetailView(NamedTuple):
     """
     Template Detail

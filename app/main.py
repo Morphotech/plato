@@ -1,0 +1,555 @@
+from contextlib import asynccontextmanager
+import json
+import uuid
+import zipfile
+import shutil
+from http import HTTPStatus
+from mimetypes import guess_extension
+from typing import Callable, List, Optional, Tuple 
+from fastapi import Body, Depends, FastAPI, File, Form, Header, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from jsonschema import ValidationError, validate as json_validate
+from sqlalchemy import ARRAY, String, cast as db_cast
+from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.orm import Session, Query as SqlQuery
+from accept_types import get_best_match
+from jinja2 import Environment as JinjaEnv
+
+from app.db.models.template import Template
+from app.deps import get_db, get_file_storage, get_jinja_env, get_template_static_directory
+from app.settings import Settings, get_settings
+from app.util.path_util import tmp_zipfile_path
+from app.util.setup_util import create_template_environment, initialize_file_storage
+from app.views.template_detail_view import TemplateDetailView
+from app import file_storage
+from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
+from app.error_messages import template_not_found, resizing_unsupported, \
+    single_page_unsupported, aspect_ratio_compromised, negative_number_invalid, \
+    unsupported_mime_type, invalid_compose_json, invalid_zip_file, template_already_exists, \
+    invalid_directory_structure, invalid_template_details, invalid_json_field
+from app.views.template_detail_view import TEMPLATE_UPDATE_SCHEMA
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    app.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+    app.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
+    app.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
+    yield 
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+
+@app.get("/templates/{template_id}")
+def template_by_id(template_id: str, db: Session = Depends(get_db)):
+    """
+    Returns template information
+    ---
+    parameters:
+      - name: template_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Information on the template
+        schema:
+          $ref: '#/definitions/TemplateDetail'
+      404:
+        description: Template not found
+    tags:
+       - template
+    """
+
+    try:
+        template: Template = db.query(Template).filter_by(id=template_id).one()
+        view = TemplateDetailView.view_from_template(template)
+        return view
+    except NoResultFound:
+        return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
+
+@app.get("/templates")
+def templates(tags: Optional[List[str]] = Query(None), db: Session = Depends(get_db)):
+    """
+    Returns template information
+    ---
+    parameters:
+      - in: query
+        name: tags
+        type: array
+        collectionFormat: multi
+        items:
+            type: string
+    responses:
+      200:
+        description: Information on all templates available
+        type: array
+        items:
+            $ref: '#/definitions/TemplateDetail'
+    tags:
+       - template
+    """
+
+    template_query: SqlQuery = db.query(Template)
+
+    if tags:
+        template_query = template_query.filter(Template.tags.contains(db_cast(tags, ARRAY(String))))
+    json_views = [TemplateDetailView.view_from_template(template)._asdict() for
+                      template in
+                      template_query]
+
+    return json_views
+
+@app.post("/template/create")
+def create_template(zipfile: UploadFile = File(...), template_details: str = Form(...),
+                    db: Session = Depends(get_db), 
+                    file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
+                    settings: Settings = Depends(get_settings)):
+    """
+    Creates a template
+    ---
+    consumes:
+    - multipart/form-data
+    parameters:
+        - in: formData
+          name: zipfile
+          type: file
+          required: true
+          description: Contents of ZIP file
+        - in: formData
+          required: true
+          name: template_details
+          type: string
+          format: application/json
+          properties:
+              title:
+                type: string
+                description: The template id
+                example: template_id
+              schema:
+                type: object
+                properties: {}
+              type:
+                # default Content-Type for string is `application/octet-stream`
+                type: string
+              metadata:
+                type: object
+                properties: {}
+              example_composition:
+                type: object
+                properties: {}
+              tags:
+                 type: array
+                 items:
+                   type: string
+          required: true
+          description: Contents of template
+    responses:
+      201:
+        description: Information of newly created template
+        type: array
+        items:
+            $ref: '#/definitions/TemplateDetail'
+      400:
+        description: The file does not have the correct directory structure
+      409:
+        description: The template already exists
+      415:
+        description: The file is not a ZIP file
+    tags:
+       - template
+    """
+
+    is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
+    if not is_zipfile:
+        return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
+    template_entry_json = json.loads(template_details)
+
+    template_id = template_entry_json['title']
+    new_template = Template.from_json_dict(template_entry_json)
+
+    template = db.query(Template).filter_by(id=template_id).one_or_none()
+    if template is not None:
+        return JSONResponse(content={"message": template_already_exists.format(template_id)}, status_code=HTTPStatus.CONFLICT)
+
+    try:
+        file_storage.save_template_files(template_id, settings.TEMPLATE_DIRECTORY_NAME, zip_file_name)
+
+        db.add(new_template)
+        db.commit()
+    except IntegrityError:
+        return JSONResponse(content={"message": template_already_exists.format(template_id)}, status_code=HTTPStatus.CONFLICT)
+    except FileNotFoundError:
+        return JSONResponse(content={"message": invalid_directory_structure}, status_code=HTTPStatus.BAD_REQUEST)
+    
+    return JSONResponse(content=TemplateDetailView.view_from_template(new_template)._asdict(), status_code=HTTPStatus.CREATED)
+
+
+
+@app.put("/template/{template_id}/update")
+def update_template(template_id: str,
+                    zipfile: UploadFile = File(...), template_details: str = Form(...),
+                    db: Session = Depends(get_db),
+                    file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
+                    settings: Settings = Depends(get_settings)):
+    """
+    Update a template
+    ---
+    consumes:
+    - multipart/form-data
+    parameters:
+        - name: template_id
+          in: path
+          type: string
+          required: true
+        - in: formData
+          name: zipfile
+          type: file
+          required: true
+          description: Contents of ZIP file
+        - in: formData
+          required: true
+          name: template_details
+          type: string
+          format: application/json
+          properties:
+              schema:
+                type: object
+                properties: {}
+              type:
+                # default Content-Type for string is `application/octet-stream`
+                type: string
+              metadata:
+                type: object
+                properties: {}
+              example_composition:
+                type: object
+                properties: {}
+              tags:
+                 type: array
+                 items:
+                   type: string
+          required: true
+          description: Contents of template
+    responses:
+      200:
+        description: Information of updated template
+        type: array
+        items:
+            $ref: '#/definitions/TemplateDetail'
+      400:
+        description: The file does not have the correct directory structure | Template details are invalid
+      404:
+        description: Template not found in database
+      415:
+        description: The file is not a ZIP file
+    tags:
+       - template
+    """
+
+    is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
+    if not is_zipfile:
+        return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
+    template_entry_json = json.loads(template_details)
+
+    try:
+        json_validate(template_entry_json, schema=TEMPLATE_UPDATE_SCHEMA)
+        # update template into database
+        template = db.query(Template).filter_by(id=template_id).one()
+        template.update_fields(template_entry_json)
+        db.commit()
+
+        # uploads template files from zip file to file storage
+        file_storage.save_template_files(template_id, settings.TEMPLATE_DIRECTORY_NAME, zip_file_name)
+    except NoResultFound:
+        return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
+    except FileNotFoundError:
+        return JSONResponse(content={"message": invalid_directory_structure}, status_code=HTTPStatus.BAD_REQUEST)
+    except ValidationError as ve:
+        return JSONResponse(content={"message": invalid_template_details.format(ve.message)}, status_code=HTTPStatus.BAD_REQUEST)
+
+    return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
+
+@app.patch("/template/{template_id}/update_details")
+def update_template_details(template_id: str, template_details: dict = Body(...),
+                            db: Session = Depends(get_db)):
+    """
+    Update template details
+    ---
+    consumes:
+    - application/json
+    parameters:
+        - name: template_id
+          in: path
+          type: string
+          required: true
+        - in: body
+          required: true
+          name: template_details
+          schema:
+            type: object
+            properties:
+                schema:
+                  type: object
+                  properties: {}
+                type:
+                  # default Content-Type for string is `application/octet-stream`
+                  type: string
+                metadata:
+                  type: object
+                  properties: {}
+                example_composition:
+                  type: object
+                  properties: {}
+                tags:
+                   type: array
+                   items:
+                     type: string
+          required: true
+          description: Contents of a template model
+    responses:
+      200:
+        description: Information of updated template
+        type: array
+        items:
+            $ref: '#/definitions/TemplateDetail'
+      400:
+        description: The input is not in the correct form
+      404:
+        description: Template not found in database
+    tags:
+       - template
+    """
+
+    try:
+        # update template into database
+        template = db.query(Template).filter_by(id=template_id).one()
+        template.update_fields(template_details)
+        db.commit()
+    except NoResultFound:
+        return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
+    except KeyError as e:
+        return JSONResponse(content={"message": invalid_json_field.format(e.args)}, status_code=HTTPStatus.BAD_REQUEST)
+
+    return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
+
+def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:
+    """
+    Saves in tmp directory and checks if file is a ZIP file.
+
+    Returns:
+        bool: Indicates if the file is a ZIP file
+        str: ZIP filename it was saved as in the tmp directory
+
+    """
+    zip_uid = str(uuid.uuid4())
+    zip_file_name = f"zipfile_{zip_uid}"
+
+    with open(tmp_zipfile_path(zip_file_name), "wb") as buffer:
+        shutil.copyfileobj(zip_file.file, buffer)
+    is_zipfile = zipfile.is_zipfile(zip_file.file)
+
+    return is_zipfile, zip_file_name
+
+@app.post("/template/{template_id}/compose")
+def compose_file(template_id: str, payload: dict = Body(...), 
+                 page: Optional[int] = Query(None), height: Optional[int] = Query(None), 
+                 width: Optional[int] = Query(None), accept: Optional[str] = Header(None),
+                 jinja_env: JinjaEnv = Depends(get_jinja_env),
+                 template_static_directory: str = Depends(get_template_static_directory), 
+                 db: Session = Depends(get_db)):
+    """
+    Composes file based on the template
+    ---
+    consumes:
+        - application/json
+    produces:
+        - application/pdf
+        - image/png
+        - text/html
+    parameters:
+        - name: template_id
+          in: path
+          type: string
+          required: true
+        - in: body
+          name: schema
+          description: body to compose file with, must be according to the template schema
+          schema:
+            type: object
+        - in: header
+          name: accept
+          required: false
+          type: string
+          enum: [application/pdf, image/png, text/html]
+          description: MIME type(s) to determine what kind of file is outputted
+        - in: query
+          name: page
+          required: false
+          type: integer
+          description: Intended page to print
+        - in: query
+          name: height
+          required: false
+          type: integer
+          description: Intended height for image output
+        - in: query
+          name: width
+          required: false
+          type: integer
+          description: Intended width for image output
+    responses:
+      200:
+        description: composed file
+        schema:
+          type: file
+      400:
+        description: Invalid compose data for template schema
+      404:
+         description: Template not found
+      406:
+         description: Unsupported MIME type for file
+    tags:
+       - compose
+       - template
+    """
+
+    return _compose(jinja_env, template_static_directory, db, template_id, "compose", lambda t: payload, width, height, page, accept)
+
+@app.get("/template/{template_id}/example")
+def example_compose(template_id: str, page: Optional[int] = Query(None), 
+                    height: Optional[int] = Query(None), width: Optional[int] = Query(None),
+                    accept: Optional[str] = Header(None), jinja_env: JinjaEnv = Depends(get_jinja_env),
+                    template_static_directory: str = Depends(get_template_static_directory), 
+                    db: Session = Depends(get_db)):
+    """
+    Gets example file based on the template
+    ---
+    consumes:
+        - application/json
+    produces:
+        - application/pdf
+        - image/png
+        - text/html
+    parameters:
+        - name: template_id
+          in: path
+          type: string
+          required: true
+        - in: header
+          name: accept
+          required: false
+          type: string
+          enum: [application/pdf, image/png, text/html]
+        - in: query
+          name: page
+          required: false
+          type: integer
+          description: Intended page to print
+        - in: query
+          name: height
+          required: false
+          type: integer
+          description: Intended height for image output
+        - in: query
+          name: width
+          required: false
+          type: integer
+          description: Intended width for image output
+    responses:
+      200:
+        description: composed file
+        schema:
+          type: file
+      404:
+         description: Template not found
+      406:
+         description: Unsupported MIME type for file
+    tags:
+       - compose
+       - template
+    """
+
+    return _compose(jinja_env, template_static_directory, db, template_id, "example", lambda t: t.example_composition, width, height, page, accept)
+
+
+class UnsupportedMIMEType(Exception):
+    """
+    Exception to be raised when the mime type requested is not supported
+    """
+    ...
+
+
+
+PDF_MIME = "application/pdf"
+HTML_MIME = "text/html"
+PNG_MIME = "image/png"
+OCTET_STREAM = "application/octet-stream"
+
+ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
+def _compose(
+    jinja_env: JinjaEnv,
+    template_static_directory: str,
+    db: Session,
+    template_id: str,
+    file_name: str,
+    compose_retrieval_function: Callable[[Template], dict],
+    width: Optional[int],
+    height: Optional[int],
+    page: Optional[int],
+    accept_header: Optional[str] = PDF_MIME ):
+
+    mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
+
+    try:
+        if mime_type is None:
+            raise UnsupportedMIMEType(accept_header)
+
+        if (width is not None or height is not None) and mime_type != PNG_MIME:
+            return JSONResponse(content={"message": resizing_unsupported.format(mime_type)}, status_code=HTTPStatus.BAD_REQUEST)
+
+        if page is not None and mime_type != PNG_MIME:
+            return JSONResponse(content={"message": single_page_unsupported.format(mime_type)}, status_code=HTTPStatus.BAD_REQUEST)
+
+        if width is not None and height is not None:
+            return JSONResponse(content={"message": aspect_ratio_compromised}, status_code=HTTPStatus.BAD_REQUEST)
+
+        if page is not None and page < 0:
+            return JSONResponse(content={"message": negative_number_invalid.format(page)}, status_code=HTTPStatus.BAD_REQUEST)
+
+        compose_params = {}
+        if width is not None:
+            compose_params["width"] = width
+        if height is not None:
+            compose_params["height"] = height
+        if page is not None:
+            compose_params["page"] = page
+
+        template_model: Template = db.query(Template).filter_by(id=template_id).one()
+        compose_data = compose_retrieval_function(template_model)
+        composed_file = compose(template_model, compose_data, mime_type, jinja_env, template_static_directory, **compose_params)
+        return StreamingResponse(composed_file, media_type=mime_type,
+                                 headers={
+        "Content-Disposition": f"attachment; filename={file_name}{guess_extension(mime_type)}"
+                                 })
+    except (RendererNotFound, UnsupportedMIMEType):
+        return JSONResponse(
+                content={"message": unsupported_mime_type.format(accept_header, ", ".join(ALL_AVAILABLE_MIME_TYPES))}, status_code=HTTPStatus.NOT_ACCEPTABLE)
+    except InvalidPageNumber as e:
+        return JSONResponse(content={"message": e.message}, status_code=HTTPStatus.BAD_REQUEST)
+    except NoResultFound:
+        return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
+    except ValidationError as ve:
+        return JSONResponse(content={"message": invalid_compose_json.format(ve.message)}, status_code=HTTPStatus.BAD_REQUEST)

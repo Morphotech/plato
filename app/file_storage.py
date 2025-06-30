@@ -9,9 +9,8 @@ from pathlib import Path
 
 from smart_open import s3
 
-from plato.db.models import Template
-from plato.util.path_util import tmp_path, tmp_zipfile_path, template_path, static_path, static_file_path, \
-    base_static_path
+from app.util.path_util import base_static_path, static_file_path, static_path, template_path, tmp_path, tmp_zipfile_path
+from app.db.models.template import Template
 
 
 class StorageType(str, Enum):
@@ -89,6 +88,7 @@ class PlatoFileStorage(ABC):
             input_file (BinaryIO): the file
             path (str): the target directory path
         """
+
         path = pathlib.Path(f"{self.files_directory_name}/{path}")
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, mode="wb") as file:
@@ -175,6 +175,7 @@ class S3FileStorage(PlatoFileStorage, ABC):
 
         self.write_file_locally(input_file, path)
 
+    # TODO: Pass db handler in to replace Template.query
     def load_templates(self, target_directory: str, template_directory: str) -> None:
         """
         Gets templates from the AWS S3 bucket which are associated with ones available in the DB.

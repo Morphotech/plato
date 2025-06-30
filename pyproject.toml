@@ -2,51 +2,46 @@
 name = "plato"
 version = "2023.5.2"
 description = "Templating as a microservice"
-authors = ["Tiago Santos <tiago.santos@vizidox.com>", "Joana Teixeira <joana.teixeira@vizidox.com>",
-    "Hieu Le <hieu.le@morphotech.co.uk>", "Rita Mariquitos <rita.mariquitos@morphotech.co.uk>"]
+authors = [
+  "Tiago Santos <tiago.santos@vizidox.com>",
+  "Joana Teixeira <joana.teixeira@vizidox.com>",
+  "Hieu Le <hieu.le@morphotech.co.uk>",
+  "Rita Mariquitos <rita.mariquitos@morphotech.co.uk>",
+]
 
 [tool.poetry.dependencies]
-python = "^3.7.7"
+python = "^3.13"
 
-flasgger = "0.9.5"
-flask = "^2.2.5"
-Flask-Cors="^3.0.9"
-gunicorn="20.0.4"
-meinheld="1.0.2"
-
-# auth
-python-jose="3.1.0"
 
 # S3
-smart-open={version="6.3.0", extras=["aws"]}
+smart-open = { version = "6.3.0", extras = ["aws"] }
 
 # settings
-python-dotenv="0.13.0"
-tomlkit="~0.5"
+# python-dotenv = "0.13.0"
+tomlkit = "~0.5"
 
 # Database
-SQLAlchemy = {version="^1.4.18", extras=["postgresql_psycopg2binary"]}
-Flask-SQLAlchemy="^3.0"
-Flask-Migrate="2.5.3"
+SQLAlchemy = { version = "^1.4.18", extras = ["postgresql_psycopg2binary"] }
 
 #HTTP
-accept-types="0.4.1"
+accept-types = "0.4.1"
 
 # Templating
-WeasyPrint="51"
-qrcode={ version = "6.1", extras=["pil"] }
-babel="^2.9.1"
-num2words="0.5.10"
+WeasyPrint = "51"
+qrcode = { version = "6.1", extras = ["pil"] }
+babel = "^2.9.1"
+num2words = "0.5.10"
 psycopg2-binary = "^2.9.5"
+fastapi = { extras = ["standard"], version = "^0.115.13" }
+pydantic-settings = "^2.10.0"
 
 [tool.poetry.dev-dependencies]
-pytest="~5.4"
-pytest-cov="2.10.1"
-moto="1.3.14"
+pytest = "~5.4"
+pytest-cov = "2.10.1"
+moto = "1.3.14"
 testcontainers = "3.0.3"
-blinker="1.4"
-PyMuPDF="1.17.7"
-cyclonedx-bom="^3.6"
+blinker = "1.4"
+cyclonedx-bom = "^3.6"
 
 [build-system]
 requires = ["poetry>=1.2"]

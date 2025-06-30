@@ -1,7 +1,7 @@
 import os
 
 from jinja2 import Environment as JinjaEnv, FileSystemLoader, select_autoescape
-from plato.compose import FILTERS
+from app.compose import FILTERS
 from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType
 from .. import settings
 
@@ -61,7 +61,7 @@ def setup_swagger_ui(project_name: str, project_version: str) -> dict:
     return swagger_ui_config
 
 
-def initialize_file_storage(storage_type: str) -> PlatoFileStorage:
+def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str) -> PlatoFileStorage:
     """
     Initializes a correct instance of the Plato File Storage, depending on the env values
 
@@ -75,9 +75,9 @@ def initialize_file_storage(storage_type: str) -> PlatoFileStorage:
     """
     file_storage: PlatoFileStorage
     if storage_type == StorageType.DISK:
-        file_storage = DiskFileStorage(settings.DATA_DIR)
+        file_storage = DiskFileStorage(data_dir)
     elif storage_type == StorageType.S3:
-        file_storage = S3FileStorage(settings.DATA_DIR, settings.S3_BUCKET)
+        file_storage = S3FileStorage(data_dir, s3_bucket)
     else:
         raise InvalidFileStorageTypeException(storage_type)
     return file_storage

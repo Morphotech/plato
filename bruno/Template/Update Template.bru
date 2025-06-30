@@ -1,23 +1,17 @@
 meta {
-  name: Update Template details
+  name: Update Template
   type: http
-  seq: 5
+  seq: 4
 }
 
-patch {
-  url: {{HOST}}/template/:templateName/update_details
-  body: json
+put {
+  url: {{HOST}}/template/:templateName/update
+  body: multipartForm
   auth: inherit
 }
 
 params:path {
-  templateName: example2
-}
-
-body:json {
-  {
-      "tags": ["example"]
-  }
+  templateName: hello_template
 }
 
 body:multipart-form {
@@ -41,7 +35,7 @@ body:multipart-form {
             "username": "John Smith"
             
         },
-        "tags": ["example", "test"]
+        "tags": ["example", "test", "changed"]
     }
   '''
 }

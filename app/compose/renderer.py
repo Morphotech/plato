@@ -1,7 +1,6 @@
 import io
 import tempfile
 from abc import abstractmethod, ABC
-from flask import current_app
 from jmespath import search
 from mimetypes import guess_extension
 from typing import Optional, Type, ClassVar, Dict, List
@@ -9,8 +8,9 @@ from qrcode import make
 from tempfile import TemporaryDirectory
 from weasyprint import HTML
 from jsonschema import validate as validate_schema
+from jinja2 import Environment as JinjaEnv
 
-from plato.db.models import Template
+from app.db.models.template import Template
 
 PDF_MIME = "application/pdf"
 HTML_MIME = "text/html"
@@ -58,8 +58,10 @@ class Renderer(ABC):
     """
     renderers: ClassVar[Dict[str, 'Renderer']] = dict()
 
-    def __init__(self, template_model: Template):
+    def __init__(self, template_model: Template, jinja_env: JinjaEnv, template_static_directory: str):
         self.template_model = template_model
+        self.jinja_env = jinja_env
+        self.template_static_directory = template_static_directory
 
     def compose_html(self, compose_data: dict) -> str:
         """
@@ -71,12 +73,10 @@ class Renderer(ABC):
         Returns:
             str: HTML string for composed file.
         """
-        jinjaenv = current_app.config["JINJAENV"]
-        static_directory = current_app.config["TEMPLATE_STATIC"]
-        template_static_directory = f"{static_directory}/{self.template_model.id}/"
-        base_static_directory = f"{static_directory}/"
+        template_static_directory = f"{self.template_static_directory}/{self.template_model.id}/"
+        base_static_directory = f"{self.template_static_directory}/"
 
-        jinja_template = jinjaenv.get_template(
+        jinja_template = self.jinja_env.get_template(
             name=f"{self.template_model.id}/{self.template_model.id}"
         )  # template id works for the file as well
 
@@ -242,13 +242,15 @@ class PNGRenderer(Renderer):
         self._page = value
 
     def __init__(self, template_model: Template,
+                 jinja_env: JinjaEnv, 
+                 template_static_directory: str,
                  height: Optional[int] = None,
                  width: Optional[int] = None,
                  page: int = 0):
         self.height = height
         self.width = width
         self.page = page
-        super().__init__(template_model)
+        super().__init__(template_model, jinja_env, template_static_directory)
 
     def print(self, html_string: str) -> io.BytesIO:
 
@@ -285,7 +287,7 @@ class HTMLRenderer(Renderer):
         return io.BytesIO(bytes(html_string, encoding="utf-8"))
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, *args, **kwargs) -> io.BytesIO:
+def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory:str, *args, **kwargs) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
 
@@ -302,6 +304,6 @@ def compose(template: Template, compose_data: dict, mime_type: str, *args, **kwa
         io.BytesIO: The Byte stream for the composed file.
     """
     validate_schema(instance=compose_data, schema=template.schema)
-    renderer = Renderer.build_renderer(mime_type, template_model=template, *args, **kwargs)
+    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env, template_static_directory=template_static_directory, *args, **kwargs)
 
     return renderer.render(compose_data)

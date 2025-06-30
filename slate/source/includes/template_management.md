@@ -28,9 +28,9 @@ are added to the database.
 
 The *zipfile* parameter should be a ZIP archive with a structure similar the Plato's permanent storage:
 
-* "template" folder containing an HTML file. The HTML file should have the name of the template, and no extension. 
+* "templates" folder containing a folder with the name of the template and inside an HTML file. The HTML file should have the name of the template, and no extension. 
   For example, if the user is creating a templated named "example-template", then the html file should be named "example-template".
-* "static" folder, containing any static files required by the template. If no files are required, the folder should be empty.
+* "static" folder, containing a folder with the name of the template and inside any static files required by the template. If no files are required, the folder should be empty.
 
 The template_details parameter should be in json format and include all relevant details for the template creation:
 

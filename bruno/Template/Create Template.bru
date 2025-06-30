@@ -1,23 +1,20 @@
 meta {
-  name: Update Template
+  name: Create Template
   type: http
-  seq: 4
+  seq: 2
 }
 
-put {
-  url: {{HOST}}/template/:templateName/update
+post {
+  url: {{HOST}}/template/create
   body: multipartForm
   auth: inherit
 }
 
-params:path {
-  templateName: example2
-}
-
 body:multipart-form {
-  zipfile: @file(/home/skkeeper/src/example2.zip)
+  zipfile: @file()
   template_details: '''
     {
+        "title": "hello_template",
         "schema": {
             "type": "object",
             "required": [
@@ -35,7 +32,7 @@ body:multipart-form {
             "username": "John Smith"
             
         },
-        "tags": ["example", "test"]
+        "tags": ["example_tag"]
     }
   '''
 }

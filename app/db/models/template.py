@@ -1,45 +1,17 @@
-# -*- coding: utf-8 -*-
-"""Database models
-
-All the classes in this module represent the database objects present in the microservice and extend a declarative
-base from sqlalchemy.
-
-"""
-from typing import Sequence, List
-
-from plato.db import db
-from sqlalchemy import String
-from sqlalchemy.dialects.postgresql import JSONB, ENUM, ARRAY
+from typing import List, Sequence
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, ARRAY
+from app.db import ModelBase
 
 
-class Template(db.Model):
-    """
-    Database model for a Template
-
-    The unique identifier for the table is `id`.
-    The metadata has some optional but relevant entries:
-        qr_entries
-            This is an array of JMESPath friendly sequences to represent where in the schema
-            are the urls to be transformed into QR codes.
-
-            Examples
-                "course.organization.contact.website_url"
-
-    Attributes:
-        id (str): The id for the template
-        schema (dict): JSON dictionary with jsonschema used for validation in said template
-        type (str): MIME type for template type, currently restricted to 'text/html'
-        metadata_ (dict): JSON dictionary for arbitrary data useful for owner
-        example_composition (dict): A dictionary containing example compose data for the template
-        tags (list): A list of identifying tags for the template
-    """
+class Template(ModelBase):
     __tablename__ = "template"
-    id = db.Column(String, primary_key=True)
-    schema = db.Column(JSONB, nullable=False)
-    type = db.Column(ENUM("text/html", name="template_mime_type"), nullable=False)
-    metadata_ = db.Column(JSONB, name="metadata", nullable=True)
-    example_composition = db.Column(JSONB, nullable=False)
-    tags = db.Column(ARRAY(String), name="tags", nullable=False, server_default="{}")
+    id = Column(String, primary_key=True)
+    schema = Column(JSONB, nullable=False)
+    type = Column(ENUM("text/html", name="template_mime_type"), nullable=False)
+    metadata_ = Column(JSONB, name="metadata", nullable=True)
+    example_composition = Column(JSONB, nullable=False)
+    tags = Column(ARRAY(String), name="tags", nullable=False, server_default="{}")
 
     def __init__(self, id_: str, schema: dict, type_: str,
                  metadata: dict,

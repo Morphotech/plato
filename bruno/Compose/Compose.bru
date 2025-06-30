@@ -10,12 +10,21 @@ post {
   auth: inherit
 }
 
+params:query {
+  ~page: 
+  ~width: 
+  ~height: 
+}
+
 params:path {
-  templateName: example2
+  templateName: hello_template
 }
 
 headers {
-  Accept: application/pdf
+  ~Accept: application/pdf
+  ~Accept: text/html
+  ~Accept: image/png
+  ~Accept: application/octet-stream
 }
 
 body:json {

@@ -1,5 +1,4 @@
 
-
 def template_path(template_dir: str, template_id: str) -> str:
     """
         Returns a path for a certain template
