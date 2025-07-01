@@ -2,8 +2,8 @@ services:
   plato-api:
     image: plato-api
     build:
-        context: .
-        dockerfile: ./Dockerfile
+      context: .
+      dockerfile: ./Dockerfile
     environment:
       DATA_DIR: /plato-data/
       TEMPLATE_DIRECTORY: /plato-data/templates/
@@ -14,11 +14,11 @@ services:
       DB_DATABASE: ${DB_DATABASE}
       S3_BUCKET: ${S3_BUCKET}
       S3_TEMPLATE_DIR: ${S3_TEMPLATE_DIR}
-      WORKER_CLASS: "egg:meinheld#gunicorn_worker"
+      STORAGE_TYPE: ${STORAGE_TYPE}
     volumes:
       - ${DATA_DIR}/aws:/root/.aws
     ports:
-      - "5000:80"
+      - "80:80"
 
   database:
     image: postgres:${POSTGRES_VER}
@@ -31,4 +31,4 @@ services:
       POSTGRES_DB: ${DB_DATABASE}
       PGDATA: /data/db/
     ports:
-      - "127.0.0.1:5455:5432"
+      - "5455:5432"
