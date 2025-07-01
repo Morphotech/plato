@@ -3,7 +3,7 @@ import tempfile
 from abc import abstractmethod, ABC
 from jmespath import search
 from mimetypes import guess_extension
-from typing import Optional, Type, ClassVar, Dict, List
+from typing import Type, ClassVar, Dict, List
 from qrcode import make
 from tempfile import TemporaryDirectory
 from weasyprint import HTML
@@ -116,7 +116,7 @@ class Renderer(ABC):
         return guess_extension(cls.mime_type)
 
     @classmethod
-    def build_renderer(cls, mime_type: str, *args, **kwargs) -> Optional[Type['Renderer']]:
+    def build_renderer(cls, mime_type: str, *args, **kwargs) -> Type['Renderer'] | None:
         """
         Factory method for 'Renderer' subclasses registered with @Renderer.renderer()
 
@@ -207,8 +207,8 @@ class PNGRenderer(Renderer):
     """
 
     mime_type = PNG_MIME
-    _width: Optional[int] = None
-    _height: Optional[int] = None
+    _width: int | None = None
+    _height: int | None = None
     _page: int = 0
 
     @property
@@ -244,8 +244,8 @@ class PNGRenderer(Renderer):
     def __init__(self, template_model: Template,
                  jinja_env: JinjaEnv, 
                  template_static_directory: str,
-                 height: Optional[int] = None,
-                 width: Optional[int] = None,
+                 height: int | None = None,
+                 width: int | None = None,
                  page: int = 0):
         self.height = height
         self.width = width

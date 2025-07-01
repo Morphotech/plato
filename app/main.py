@@ -5,7 +5,7 @@ import zipfile
 import shutil
 from http import HTTPStatus
 from mimetypes import guess_extension
-from typing import Callable, List, Optional, Tuple 
+from typing import Any, Callable, List, Tuple 
 from fastapi import Body, Depends, FastAPI, File, Form, Header, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -29,6 +29,7 @@ from app.error_messages import template_not_found, resizing_unsupported, \
     unsupported_mime_type, invalid_compose_json, invalid_zip_file, template_already_exists, \
     invalid_directory_structure, invalid_template_details, invalid_json_field
 from app.views.template_detail_view import TEMPLATE_UPDATE_SCHEMA
+from app.exceptions import UnsupportedMIMEType
 
 
 
@@ -51,7 +52,7 @@ app.add_middleware(
 )
 
 @app.get("/templates/{template_id}")
-def template_by_id(template_id: str, db: Session = Depends(get_db)):
+def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
     """
     Returns template information
     ---
@@ -79,7 +80,7 @@ def template_by_id(template_id: str, db: Session = Depends(get_db)):
         return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
 
 @app.get("/templates")
-def templates(tags: Optional[List[str]] = Query(None), db: Session = Depends(get_db)):
+def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[dict[str, Any]]:
     """
     Returns template information
     ---
@@ -114,7 +115,7 @@ def templates(tags: Optional[List[str]] = Query(None), db: Session = Depends(get
 def create_template(zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db), 
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)):
+                    settings: Settings = Depends(get_settings)) -> None | JSONResponse:
     """
     Creates a template
     ---
@@ -202,7 +203,7 @@ def update_template(template_id: str,
                     zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db),
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)):
+                    settings: Settings = Depends(get_settings)) -> None | JSONResponse:
     """
     Update a template
     ---
@@ -284,7 +285,7 @@ def update_template(template_id: str,
 
 @app.patch("/template/{template_id}/update_details")
 def update_template_details(template_id: str, template_details: dict = Body(...),
-                            db: Session = Depends(get_db)):
+                            db: Session = Depends(get_db)) -> None | JSONResponse:
     """
     Update template details
     ---
@@ -365,8 +366,8 @@ def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:
 
 @app.post("/template/{template_id}/compose")
 def compose_file(template_id: str, payload: dict = Body(...), 
-                 page: Optional[int] = Query(None), height: Optional[int] = Query(None), 
-                 width: Optional[int] = Query(None), accept: Optional[str] = Header(None),
+                 page: int | None = Query(None), height: int | None = Query(None), 
+                 width: int | None = Query(None), accept: str | None = Header(None),
                  jinja_env: JinjaEnv = Depends(get_jinja_env),
                  template_static_directory: str = Depends(get_template_static_directory), 
                  db: Session = Depends(get_db)):
@@ -429,9 +430,9 @@ def compose_file(template_id: str, payload: dict = Body(...),
     return _compose(jinja_env, template_static_directory, db, template_id, "compose", lambda t: payload, width, height, page, accept)
 
 @app.get("/template/{template_id}/example")
-def example_compose(template_id: str, page: Optional[int] = Query(None), 
-                    height: Optional[int] = Query(None), width: Optional[int] = Query(None),
-                    accept: Optional[str] = Header(None), jinja_env: JinjaEnv = Depends(get_jinja_env),
+def example_compose(template_id: str, page: int | None = Query(None), 
+                    height: int | None = Query(None), width: int | None = Query(None),
+                    accept: str | None = Header(None), jinja_env: JinjaEnv = Depends(get_jinja_env),
                     template_static_directory: str = Depends(get_template_static_directory), 
                     db: Session = Depends(get_db)):
     """
@@ -484,15 +485,6 @@ def example_compose(template_id: str, page: Optional[int] = Query(None),
 
     return _compose(jinja_env, template_static_directory, db, template_id, "example", lambda t: t.example_composition, width, height, page, accept)
 
-
-class UnsupportedMIMEType(Exception):
-    """
-    Exception to be raised when the mime type requested is not supported
-    """
-    ...
-
-
-
 PDF_MIME = "application/pdf"
 HTML_MIME = "text/html"
 PNG_MIME = "image/png"
@@ -506,10 +498,10 @@ def _compose(
     template_id: str,
     file_name: str,
     compose_retrieval_function: Callable[[Template], dict],
-    width: Optional[int],
-    height: Optional[int],
-    page: Optional[int],
-    accept_header: Optional[str] = PDF_MIME ):
+    width: int | None,
+    height: int | None,
+    page: int | None,
+    accept_header: str | None = PDF_MIME) -> StreamingResponse | JSONResponse:
 
     mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
 
