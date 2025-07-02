@@ -51,7 +51,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@app.get("/templates/{template_id}")
+@app.get("/templates/{template_id}", response_model=TemplateDetailView)
 def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
     """
     Returns template information
@@ -111,11 +111,11 @@ def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db
 
     return json_views
 
-@app.post("/template/create")
+@app.post("/template/create", response_model=TemplateDetailView)
 def create_template(zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db), 
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)) -> None | JSONResponse:
+                    settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
     """
     Creates a template
     ---
@@ -198,12 +198,12 @@ def create_template(zipfile: UploadFile = File(...), template_details: str = For
 
 
 
-@app.put("/template/{template_id}/update")
+@app.put("/template/{template_id}/update", response_model=TemplateDetailView)
 def update_template(template_id: str,
                     zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db),
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)) -> None | JSONResponse:
+                    settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
     """
     Update a template
     ---
@@ -283,9 +283,9 @@ def update_template(template_id: str,
 
     return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
 
-@app.patch("/template/{template_id}/update_details")
+@app.patch("/template/{template_id}/update_details", response_model=TemplateDetailView)
 def update_template_details(template_id: str, template_details: dict = Body(...),
-                            db: Session = Depends(get_db)) -> None | JSONResponse:
+                            db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
     """
     Update template details
     ---
@@ -364,13 +364,13 @@ def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:
 
     return is_zipfile, zip_file_name
 
-@app.post("/template/{template_id}/compose")
+@app.post("/template/{template_id}/compose", response_model=None)
 def compose_file(template_id: str, payload: dict = Body(...), 
                  page: int | None = Query(None), height: int | None = Query(None), 
                  width: int | None = Query(None), accept: str | None = Header(None),
                  jinja_env: JinjaEnv = Depends(get_jinja_env),
                  template_static_directory: str = Depends(get_template_static_directory), 
-                 db: Session = Depends(get_db)):
+                 db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
     """
     Composes file based on the template
     ---
@@ -429,12 +429,12 @@ def compose_file(template_id: str, payload: dict = Body(...),
 
     return _compose(jinja_env, template_static_directory, db, template_id, "compose", lambda t: payload, width, height, page, accept)
 
-@app.get("/template/{template_id}/example")
+@app.get("/template/{template_id}/example", response_model=None)
 def example_compose(template_id: str, page: int | None = Query(None), 
                     height: int | None = Query(None), width: int | None = Query(None),
                     accept: str | None = Header(None), jinja_env: JinjaEnv = Depends(get_jinja_env),
                     template_static_directory: str = Depends(get_template_static_directory), 
-                    db: Session = Depends(get_db)):
+                    db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
     """
     Gets example file based on the template
     ---

@@ -1,10 +1,11 @@
 from typing import List, Sequence
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import ENUM, JSONB, ARRAY
-from app.db import ModelBase
+
+from app.db.models import Base
 
 
-class Template(ModelBase):
+class Template(Base):
     __tablename__ = "template"
     id = Column(String, primary_key=True)
     schema = Column(JSONB, nullable=False)
