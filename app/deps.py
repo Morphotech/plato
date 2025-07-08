@@ -1,10 +1,12 @@
+from typing import Generator
 from fastapi import Request
+from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.file_storage import PlatoFileStorage
 from jinja2 import Environment as JinjaEnv
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db

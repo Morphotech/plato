@@ -1,3 +1,5 @@
+from httpx import Response
 
-def get_message(response):
-    return response.json["message"]
+
+def get_message(response: Response):
+    return response.json()["message"]

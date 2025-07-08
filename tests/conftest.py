@@ -1,76 +1,166 @@
 import tempfile
-from contextlib import nullcontext
-from pathlib import Path
+from contextlib import asynccontextmanager, nullcontext
 from time import sleep
-from typing import Callable, TypeVar, Any
-
+from typing import Generator 
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
 import pytest
-from jinja2 import Environment as JinjaEnv, DictLoader
-from jinja2 import select_autoescape
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.compose import DockerCompose
 from testcontainers.core.utils import inside_container
 
-from plato.db import db
-from plato.file_storage import S3FileStorage, PlatoFileStorage, DiskFileStorage
-from plato.flask_app import create_app
-from tests.test_s3_application_set_up import BUCKET_NAME
+from app.db.models import Base
+from app.file_storage import DiskFileStorage, S3FileStorage
+from app.main import app
+from app.deps import get_db
+
+
+BUCKET_NAME = 'test_template_bucket'
 
 TEST_DB_URL = f"postgresql://test:test@{'database:5432' if inside_container() else 'localhost:5456'}/test"
 
-FuncType = Callable[..., Any]
-F = TypeVar('F', bound=FuncType)
+# FuncType = Callable[..., Any]
+# F = TypeVar('F', bound=FuncType)
 
+import ssl
 
-@pytest.fixture(scope='session')
-def template_loader() -> DictLoader:
-    yield DictLoader({})
+if not hasattr(ssl, "wrap_socket"):
+    import socket
+
+    class DummySSLSocket:
+        def __init__(self, sock, *args, **kwargs):
+            self.sock = sock
+
+        def __getattr__(self, name):
+            return getattr(self.sock, name)
+
+    def wrap_socket(sock, *args, **kwargs):
+        # This does NOT provide actual SSL functionality!
+        return DummySSLSocket(sock)
+
+    ssl.wrap_socket = wrap_socket
+
+test_engine = create_engine(TEST_DB_URL, future=True)
+TestingSessionLocal = sessionmaker(bind=test_engine)
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @pytest.fixture(scope='class')
-def client_local_storage():
-    with tempfile.TemporaryDirectory() as file_dir:
-        yield from flask_client(template_loader, file_storage=DiskFileStorage(file_dir))
+def db() -> Generator[Session, None, None]:
+    db_handle = next(override_get_db())
+    yield db_handle
 
 
-@pytest.fixture(scope='class')
-def client_s3_storage():
-    with tempfile.TemporaryDirectory() as file_dir:
-        yield from flask_client(template_loader, file_storage=S3FileStorage(file_dir, BUCKET_NAME))
 
-
-def flask_client(template_loader, file_storage: PlatoFileStorage):
-
-    current_folder = str(Path(__file__).resolve().parent)
-
+def fastapi_client(lifespan) -> Generator[TestClient, None, None]:
     if inside_container():
         context_manager = nullcontext()
     else:
+        current_folder = str(Path(__file__).resolve().parent)
         docker_compose_path = f"{current_folder}/docker/"
-        context_manager = DockerCompose(filepath=docker_compose_path, compose_file_name="docker-compose.local.test.yml")
-
+        context_manager = DockerCompose(filepath=docker_compose_path, 
+                                        compose_file_name="docker-compose.local.test.yml")
     with context_manager:
-
         sleep(5)
 
-        template_environment = JinjaEnv(
-            loader=template_loader,
-            autoescape=select_autoescape(["html", "xml"]),
-            auto_reload=True
-        )
-
-        plato_app = create_app(db_url=TEST_DB_URL,
-                               jinja_env=template_environment,
-                               template_static_directory=f"{current_folder}/resources/static",
-                               swagger_ui_config={},
-                               storage=file_storage)
-        plato_app.config['TESTING'] = True
-
-        with plato_app.test_client() as client:
-            with plato_app.app_context():
-                db.create_all()
+        app.router.lifespan_context = lifespan
+        with TestClient(app) as client:
+            Base.metadata.create_all(test_engine)
             yield client
 
+@pytest.fixture(scope='class')
+def fastapi_client_local_storage():
+    @asynccontextmanager
+    async def mock_lifespan_local_storage(app: FastAPI):
+        app.dependency_overrides[get_db] = override_get_db
+        with tempfile.TemporaryDirectory() as file_dir:
+            app.state.file_storage = DiskFileStorage(file_dir)
+            app.state.jinja_env = JinjaEnv(loader=DictLoader({}), 
+                                           autoescape=select_autoescape(["html", "xml"]),
+                                           auto_reload=True)
+            current_folder = str(Path(__file__).resolve().parent)
+            app.state.template_static_directory = f"{current_folder}/resources/static"
+            yield
+        app.dependency_overrides.clear()
+    yield from fastapi_client(mock_lifespan_local_storage)
 
-@pytest.fixture(scope='session')
-def jinjaenv(client_local_storage):
-    yield client_local_storage.application.config["JINJAENV"]
+
+@pytest.fixture(scope='class')
+def fastapi_client_s3_storage():
+    @asynccontextmanager
+    async def mock_lifespan_s3_storage(app: FastAPI):
+        app.dependency_overrides[get_db] = override_get_db
+        with tempfile.TemporaryDirectory() as file_dir:
+            app.state.file_storage = S3FileStorage(file_dir, BUCKET_NAME)
+            app.state.jinja_env = JinjaEnv(loader=DictLoader({}), 
+                                           autoescape=select_autoescape(["html", "xml"]),
+                                           auto_reload=True)
+            current_folder = str(Path(__file__).resolve().parent)
+            app.state.template_static_directory = f"{current_folder}/resources/static"
+            yield
+        app.dependency_overrides.clear()
+    yield from fastapi_client(mock_lifespan_s3_storage)
+
+
+
+# @pytest.fixture(scope='session')
+# def template_loader() -> DictLoader:
+#     yield DictLoader({})
+
+# @pytest.fixture(scope='class')
+# def client_local_storage():
+#     with tempfile.TemporaryDirectory() as file_dir:
+#         yield from flask_client(template_loader, file_storage=DiskFileStorage(file_dir))
+#
+#
+# @pytest.fixture(scope='class')
+# def client_s3_storage():
+#     with tempfile.TemporaryDirectory() as file_dir:
+#         yield from flask_client(template_loader, file_storage=S3FileStorage(file_dir, BUCKET_NAME))
+#
+#
+# def flask_client(template_loader, file_storage: PlatoFileStorage, db: Session):
+#
+#     current_folder = str(Path(__file__).resolve().parent)
+#
+#     if inside_container():
+#         context_manager = nullcontext()
+#     else:
+#         docker_compose_path = f"{current_folder}/docker/"
+#         context_manager = DockerCompose(filepath=docker_compose_path, compose_file_name="docker-compose.local.test.yml")
+#
+#     with context_manager:
+#
+#         sleep(5)
+#
+#         template_environment = JinjaEnv(
+#             loader=template_loader,
+#             autoescape=select_autoescape(["html", "xml"]),
+#             auto_reload=True
+#         )
+#
+#         plato_app = create_app(db_url=TEST_DB_URL,
+#                                jinja_env=template_environment,
+#                                template_static_directory=f"{current_folder}/resources/static",
+#                                swagger_ui_config={},
+#                                storage=file_storage)
+#         plato_app.config['TESTING'] = True
+#
+#         with plato_app.test_client() as client:
+#             with plato_app.app_context():
+#                 db.create_all()
+#             yield client
+#
+#
+# @pytest.fixture(scope='session')
+# def jinjaenv(client_local_storage):
+#     yield client_local_storage.application.config["JINJAENV"]

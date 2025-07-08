@@ -51,8 +51,8 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@app.get("/templates/{template_id}", response_model=TemplateDetailView)
-def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
+@app.get("/templates/{template_id}", response_model=dict[str, Any])
+def template_by_id(template_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     """
     Returns template information
     ---
@@ -75,7 +75,7 @@ def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateD
     try:
         template: Template = db.query(Template).filter_by(id=template_id).one()
         view = TemplateDetailView.view_from_template(template)
-        return view
+        return view._asdict()
     except NoResultFound:
         return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
 
