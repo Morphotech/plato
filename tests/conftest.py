@@ -23,27 +23,13 @@ BUCKET_NAME = 'test_template_bucket'
 
 TEST_DB_URL = f"postgresql://test:test@{'database:5432' if inside_container() else 'localhost:5456'}/test"
 
-if not hasattr(ssl, "wrap_socket"):
-    import socket
 
-    class DummySSLSocket:
-        def __init__(self, sock, *args, **kwargs):
-            self.sock = sock
-
-        def __getattr__(self, name):
-            return getattr(self.sock, name)
-
-    def wrap_socket(sock, *args, **kwargs):
-        # This does NOT provide actual SSL functionality!
-        return DummySSLSocket(sock)
-
-    ssl.wrap_socket = wrap_socket
-
-test_engine = create_engine(TEST_DB_URL, future=True)
-TestingSessionLocal = sessionmaker(bind=test_engine)
 
 def override_get_db():
+    test_engine = create_engine(TEST_DB_URL, future=True)
+    TestingSessionLocal = sessionmaker(bind=test_engine)
     db = TestingSessionLocal()
+    Base.metadata.create_all(test_engine)
     try:
         yield db
     finally:
@@ -69,7 +55,6 @@ def fastapi_client(lifespan) -> Generator[TestClient, None, None]:
 
         app.router.lifespan_context = lifespan
         with TestClient(app) as client:
-            Base.metadata.create_all(test_engine)
             yield client
 
 @pytest.fixture(scope='class')

@@ -16,6 +16,9 @@ python = "^3.13"
 fastapi = { extras = ["standard"], version = "^0.115.13" }
 pydantic-settings = "^2.10.0"
 uvicorn = "^0.35.0"
+psycopg2-binary = "^2.9.10"
+alembic = "^1.16.2"
+jsonschema = "^4.24.0"
 
 # S3
 smart-open = { version = "6.3.0", extras = ["aws"] }
@@ -27,19 +30,17 @@ sqlalchemy = { version = "^2.0", extras = ["postgresql_psycopg2binary"] }
 accept-types = "0.4.1"
 
 # Templating
-WeasyPrint = "51"
+WeasyPrint = "52"
 qrcode = { version = "6.1", extras = ["pil"] }
 babel = "^2.9.1"
 num2words = "0.5.10"
-psycopg2-binary = "^2.9.5"
-alembic = "^1.16.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~8.4.1"
 pytest-cov = "2.10.1"
 pymupdf = "^1.26.1"
-moto = "3.0.0"
-testcontainers = "3.0.3"
+moto = { version = "5.1.8", extras = ["s3"] }
+testcontainers = "3.7.1"
 blinker = "1.4"
 cyclonedx-bom = "^3.6"
 

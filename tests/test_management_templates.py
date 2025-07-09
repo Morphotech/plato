@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 import boto3
-from moto import mock_s3
+from moto import mock_aws
 from pathlib import Path
 from fastapi.testclient import TestClient
 from http import HTTPStatus
@@ -192,7 +192,7 @@ def _fleeting_database(client: TestClient, db: Session):
 
 @pytest.fixture(scope="class")
 def setup_s3():
-    with mock_s3():
+    with mock_aws():
         conn = boto3.resource('s3')
         conn.create_bucket(Bucket=BUCKET_NAME)
         yield

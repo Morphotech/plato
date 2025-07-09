@@ -3,7 +3,7 @@ import pytest
 import boto3
 import pathlib
 from smart_open import s3
-from moto import mock_s3
+from moto import mock_aws
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 
@@ -60,7 +60,7 @@ def create_s3_bucket() -> None:
 
 @pytest.fixture(scope="function")
 def populate_s3():
-    with mock_s3():
+    with mock_aws():
         create_s3_bucket()
 
         static_file_1 = get_static_file_path(file_name="abc_1", template_id="0")
@@ -73,7 +73,7 @@ def populate_s3():
 
 @pytest.fixture(scope='function')
 def populate_s3_with_missing_template_file():
-    with mock_s3():
+    with mock_aws():
         create_s3_bucket()
 
         static_file = get_static_file_path(file_name="abc", template_id="0")
