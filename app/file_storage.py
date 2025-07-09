@@ -8,6 +8,7 @@ from typing import BinaryIO, Dict, Any
 from pathlib import Path
 
 from smart_open import s3
+from sqlalchemy.orm import Session
 
 from app.util.path_util import base_static_path, static_file_path, static_path, template_path, tmp_path, tmp_zipfile_path
 from app.db.models.template import Template
@@ -111,7 +112,7 @@ class PlatoFileStorage(ABC):
             with open(path, mode="wb") as file:
                 file.write(content)
 
-    def load_templates(self, target_directory: str, template_directory: str) -> None:
+    def load_templates(self, target_directory: str, template_directory: str, db: Session) -> None:
         """
         Args:
             target_directory: Target directory to store the templates in
@@ -175,8 +176,7 @@ class S3FileStorage(PlatoFileStorage, ABC):
 
         self.write_file_locally(input_file, path)
 
-    # TODO: Pass db handler in to replace Template.query
-    def load_templates(self, target_directory: str, template_directory: str) -> None:
+    def load_templates(self, target_directory: str, template_directory: str, db: Session) -> None:
         """
         Gets templates from the AWS S3 bucket which are associated with ones available in the DB.
         Expected directory structure is {s3_template_directory}/{template_id}
@@ -189,7 +189,9 @@ class S3FileStorage(PlatoFileStorage, ABC):
         if old_templates_path.exists():
             shutil.rmtree(old_templates_path)
 
-        templates = Template.query.with_entities(Template.id).all()
+        # TODO: Not sure how is this different than just asking for every template?
+        # templates = Template.query.with_entities(Template.id).all()
+        templates = db.query(Template).all()
 
         # get static files
         static_files = self.get_file(path=base_static_path(template_directory),

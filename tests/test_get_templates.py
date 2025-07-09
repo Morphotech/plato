@@ -12,20 +12,19 @@ NUMBER_OF_TEMPLATES = 50
 
 @pytest.fixture(scope="class")
 def populate_db(fastapi_client_local_storage: TestClient, db: Session):
-    with db as session:
-        for i in range(NUMBER_OF_TEMPLATES):
-            t = Template(id_=str(i),
-                         schema={"type": "object",
-                                 "properties": {f"{i}": {"type": "string"}}
-                                 },
-                         type_="text/html", metadata={}, example_composition={}, tags=[f"tag{str(i)}", "example"])
-            session.add(t)
-        session.commit()
+    for i in range(NUMBER_OF_TEMPLATES):
+        t = Template(id_=str(i),
+                     schema={"type": "object",
+                             "properties": {f"{i}": {"type": "string"}}
+                             },
+                     type_="text/html", metadata={}, example_composition={}, tags=[f"tag{str(i)}", "example"])
+        db.add(t)
+    db.commit()
 
-        yield
+    yield
 
-        session.query(Template).delete()
-        session.commit()
+    db.query(Template).delete()
+    db.commit()
 
 
 @pytest.mark.usefixtures("populate_db")

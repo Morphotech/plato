@@ -1,4 +1,5 @@
 import tempfile
+import ssl
 from contextlib import asynccontextmanager, nullcontext
 from time import sleep
 from typing import Generator 
@@ -25,7 +26,6 @@ TEST_DB_URL = f"postgresql://test:test@{'database:5432' if inside_container() el
 # FuncType = Callable[..., Any]
 # F = TypeVar('F', bound=FuncType)
 
-import ssl
 
 if not hasattr(ssl, "wrap_socket"):
     import socket
@@ -56,8 +56,7 @@ def override_get_db():
 
 @pytest.fixture(scope='class')
 def db() -> Generator[Session, None, None]:
-    db_handle = next(override_get_db())
-    yield db_handle
+    yield from override_get_db()
 
 
 
