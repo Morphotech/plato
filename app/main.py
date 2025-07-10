@@ -53,25 +53,6 @@ app.add_middleware(
 
 @app.get("/templates/{template_id}", response_model=dict[str, Any])
 def template_by_id(template_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    """
-    Returns template information
-    ---
-    parameters:
-      - name: template_id
-        in: path
-        type: string
-        required: true
-    responses:
-      200:
-        description: Information on the template
-        schema:
-          $ref: '#/definitions/TemplateDetail'
-      404:
-        description: Template not found
-    tags:
-       - template
-    """
-
     try:
         template: Template = db.query(Template).filter_by(id=template_id).one()
         view = TemplateDetailView.view_from_template(template)
@@ -81,26 +62,6 @@ def template_by_id(template_id: str, db: Session = Depends(get_db)) -> dict[str,
 
 @app.get("/templates")
 def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[dict[str, Any]]:
-    """
-    Returns template information
-    ---
-    parameters:
-      - in: query
-        name: tags
-        type: array
-        collectionFormat: multi
-        items:
-            type: string
-    responses:
-      200:
-        description: Information on all templates available
-        type: array
-        items:
-            $ref: '#/definitions/TemplateDetail'
-    tags:
-       - template
-    """
-
     template_query: SqlQuery = db.query(Template)
 
     if tags:
@@ -116,61 +77,6 @@ def create_template(zipfile: UploadFile = File(...), template_details: str = For
                     db: Session = Depends(get_db), 
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
                     settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
-    """
-    Creates a template
-    ---
-    consumes:
-    - multipart/form-data
-    parameters:
-        - in: formData
-          name: zipfile
-          type: file
-          required: true
-          description: Contents of ZIP file
-        - in: formData
-          required: true
-          name: template_details
-          type: string
-          format: application/json
-          properties:
-              title:
-                type: string
-                description: The template id
-                example: template_id
-              schema:
-                type: object
-                properties: {}
-              type:
-                # default Content-Type for string is `application/octet-stream`
-                type: string
-              metadata:
-                type: object
-                properties: {}
-              example_composition:
-                type: object
-                properties: {}
-              tags:
-                 type: array
-                 items:
-                   type: string
-          required: true
-          description: Contents of template
-    responses:
-      201:
-        description: Information of newly created template
-        type: array
-        items:
-            $ref: '#/definitions/TemplateDetail'
-      400:
-        description: The file does not have the correct directory structure
-      409:
-        description: The template already exists
-      415:
-        description: The file is not a ZIP file
-    tags:
-       - template
-    """
-
     is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
     if not is_zipfile:
         return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -204,61 +110,6 @@ def update_template(template_id: str,
                     db: Session = Depends(get_db),
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
                     settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
-    """
-    Update a template
-    ---
-    consumes:
-    - multipart/form-data
-    parameters:
-        - name: template_id
-          in: path
-          type: string
-          required: true
-        - in: formData
-          name: zipfile
-          type: file
-          required: true
-          description: Contents of ZIP file
-        - in: formData
-          required: true
-          name: template_details
-          type: string
-          format: application/json
-          properties:
-              schema:
-                type: object
-                properties: {}
-              type:
-                # default Content-Type for string is `application/octet-stream`
-                type: string
-              metadata:
-                type: object
-                properties: {}
-              example_composition:
-                type: object
-                properties: {}
-              tags:
-                 type: array
-                 items:
-                   type: string
-          required: true
-          description: Contents of template
-    responses:
-      200:
-        description: Information of updated template
-        type: array
-        items:
-            $ref: '#/definitions/TemplateDetail'
-      400:
-        description: The file does not have the correct directory structure | Template details are invalid
-      404:
-        description: Template not found in database
-      415:
-        description: The file is not a ZIP file
-    tags:
-       - template
-    """
-
     is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
     if not is_zipfile:
         return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -286,54 +137,6 @@ def update_template(template_id: str,
 @app.patch("/template/{template_id}/update_details", response_model=TemplateDetailView)
 def update_template_details(template_id: str, template_details: dict = Body(...),
                             db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
-    """
-    Update template details
-    ---
-    consumes:
-    - application/json
-    parameters:
-        - name: template_id
-          in: path
-          type: string
-          required: true
-        - in: body
-          required: true
-          name: template_details
-          schema:
-            type: object
-            properties:
-                schema:
-                  type: object
-                  properties: {}
-                type:
-                  # default Content-Type for string is `application/octet-stream`
-                  type: string
-                metadata:
-                  type: object
-                  properties: {}
-                example_composition:
-                  type: object
-                  properties: {}
-                tags:
-                   type: array
-                   items:
-                     type: string
-          required: true
-          description: Contents of a template model
-    responses:
-      200:
-        description: Information of updated template
-        type: array
-        items:
-            $ref: '#/definitions/TemplateDetail'
-      400:
-        description: The input is not in the correct form
-      404:
-        description: Template not found in database
-    tags:
-       - template
-    """
-
     try:
         # update template into database
         template = db.query(Template).filter_by(id=template_id).one()
@@ -371,62 +174,6 @@ def compose_file(template_id: str, payload: dict = Body(...),
                  jinja_env: JinjaEnv = Depends(get_jinja_env),
                  template_static_directory: str = Depends(get_template_static_directory), 
                  db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
-    """
-    Composes file based on the template
-    ---
-    consumes:
-        - application/json
-    produces:
-        - application/pdf
-        - image/png
-        - text/html
-    parameters:
-        - name: template_id
-          in: path
-          type: string
-          required: true
-        - in: body
-          name: schema
-          description: body to compose file with, must be according to the template schema
-          schema:
-            type: object
-        - in: header
-          name: accept
-          required: false
-          type: string
-          enum: [application/pdf, image/png, text/html]
-          description: MIME type(s) to determine what kind of file is outputted
-        - in: query
-          name: page
-          required: false
-          type: integer
-          description: Intended page to print
-        - in: query
-          name: height
-          required: false
-          type: integer
-          description: Intended height for image output
-        - in: query
-          name: width
-          required: false
-          type: integer
-          description: Intended width for image output
-    responses:
-      200:
-        description: composed file
-        schema:
-          type: file
-      400:
-        description: Invalid compose data for template schema
-      404:
-         description: Template not found
-      406:
-         description: Unsupported MIME type for file
-    tags:
-       - compose
-       - template
-    """
-
     return _compose(jinja_env, template_static_directory, db, template_id, "compose", lambda t: payload, width, height, page, accept)
 
 @app.get("/template/{template_id}/example", response_model=None)
@@ -435,54 +182,6 @@ def example_compose(template_id: str, page: int | None = Query(None),
                     accept: str | None = Header(None), jinja_env: JinjaEnv = Depends(get_jinja_env),
                     template_static_directory: str = Depends(get_template_static_directory), 
                     db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
-    """
-    Gets example file based on the template
-    ---
-    consumes:
-        - application/json
-    produces:
-        - application/pdf
-        - image/png
-        - text/html
-    parameters:
-        - name: template_id
-          in: path
-          type: string
-          required: true
-        - in: header
-          name: accept
-          required: false
-          type: string
-          enum: [application/pdf, image/png, text/html]
-        - in: query
-          name: page
-          required: false
-          type: integer
-          description: Intended page to print
-        - in: query
-          name: height
-          required: false
-          type: integer
-          description: Intended height for image output
-        - in: query
-          name: width
-          required: false
-          type: integer
-          description: Intended width for image output
-    responses:
-      200:
-        description: composed file
-        schema:
-          type: file
-      404:
-         description: Template not found
-      406:
-         description: Unsupported MIME type for file
-    tags:
-       - compose
-       - template
-    """
-
     return _compose(jinja_env, template_static_directory, db, template_id, "example", lambda t: t.example_composition, width, height, page, accept)
 
 PDF_MIME = "application/pdf"

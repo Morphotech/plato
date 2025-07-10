@@ -22,6 +22,26 @@ The instructions are also available below.
 
 ```bash
 sudo apt-get install build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+```
+
+#### MacOS
+
+```bash
+brew install weasyprint
+```
+
+Check if weasyprint is working:
+
+```bash
+weasyprint --info
+```
+
+If not:
+
+```bash
+sudo mkdir -p /usr/local/lib
+sudo cp $(brew --prefix fontconfig)/lib/libfontconfig.\* /usr/local/lib
 ```
 
 ### Installing
@@ -77,7 +97,7 @@ You can then run the application by running:
 poetry run fastapi dev
 ```
 
-This will make the application available at http://localhost:5000/apidocs/
+This will make the application available at http://localhost:8000/docs/
 where you can use swagger-ui to interact with the application.
 
 _Note_: If you run the app through a server instead of main, make sure you run `flask refresh`
@@ -112,8 +132,7 @@ Please check the detailed instructions on the [official documentation](https://p
 
 ## Built With
 
-- [Flask](https://palletsprojects.com/p/flask/) - Web framework
-- [Flasgger](https://github.com/flasgger/flasgger) - Swagger 2 specification
+- [Fastapi](https://fastapi.tiangolo.com/) - Web framework
 - [Poetry](https://python-poetry.org/) - Dependency Management
 - [Jinja2](https://palletsprojects.com/p/jinja/) - For HTML composition
 - [Weasyprint](https://weasyprint.org/) - For PDF generation from HTML
@@ -125,5 +144,6 @@ We use [Calendar Versioning](https://calver.org/).
 ## Authors
 
 - **Tiago Santos** - _Initial work_ - tiago.santos@vizidox.com
-- **Rita Mariquitos** - rita.mariquitos@morphotech.co.uk
+- **Rita Mariquitos** - rita.mariquitos@morphotech.com
 - **Joana Teixeira** - joana.teixeira@vizidox.com
+- **Fábio André Damas** - Upgrade to fastapi\_ - fabio.damas@morphotech.com
