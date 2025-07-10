@@ -2,7 +2,7 @@ from typing import List, Sequence
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import ENUM, JSONB, ARRAY
 
-from app.db.models import Base
+from app.db.base_class import Base
 
 
 class Template(Base):

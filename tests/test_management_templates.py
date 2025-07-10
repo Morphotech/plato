@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from http import HTTPStatus
 import json
 
-from app.db.models.template import Template
+from app.models.template import Template
 from tests.test_s3_application_set_up import BUCKET_NAME
 
 TEMPLATE_ID = "template_test_1"

@@ -11,7 +11,7 @@ from smart_open import s3
 from sqlalchemy.orm import Session
 
 from app.util.path_util import base_static_path, static_file_path, static_path, template_path, tmp_path, tmp_zipfile_path
-from app.db.models.template import Template
+from app.models.template import Template
 
 
 class StorageType(str, Enum):

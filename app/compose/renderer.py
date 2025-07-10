@@ -10,7 +10,7 @@ from weasyprint import HTML
 from jsonschema import validate as validate_schema
 from jinja2 import Environment as JinjaEnv
 
-from app.db.models.template import Template
+from app.models.template import Template
 
 PDF_MIME = "application/pdf"
 HTML_MIME = "text/html"

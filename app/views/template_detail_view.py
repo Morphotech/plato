@@ -1,7 +1,7 @@
 from typing import NamedTuple, Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.db.models.template import Template
+    from app.models.template import Template
 
 
 class TemplateDetailView(NamedTuple):

@@ -1,23 +1,22 @@
 import tempfile
-import ssl
 from contextlib import asynccontextmanager, nullcontext
-from time import sleep
-from typing import Generator 
 from pathlib import Path
+from time import sleep
+from typing import Generator
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.compose import DockerCompose
 from testcontainers.core.utils import inside_container
 
-from app.db.models import Base
+from app.db.base_class import Base
+from app.deps import get_db
 from app.file_storage import DiskFileStorage, S3FileStorage
 from app.main import app
-from app.deps import get_db
-
 
 BUCKET_NAME = 'test_template_bucket'
 
@@ -39,7 +38,6 @@ def override_get_db():
 @pytest.fixture(scope='class')
 def db() -> Generator[Session, None, None]:
     yield from override_get_db()
-
 
 
 def fastapi_client(lifespan) -> Generator[TestClient, None, None]:

@@ -7,7 +7,7 @@ from moto import mock_aws
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 
-from app.db.models.template import Template
+from app.models.template import Template
 from app.file_storage import NoIndexTemplateFound
 
 

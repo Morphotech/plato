@@ -17,7 +17,7 @@ from itertools import chain
 from app.error_messages import aspect_ratio_compromised, resizing_unsupported, \
                             unsupported_mime_type
 
-from app.db.models.template import Template
+from app.models.template import Template
 from app.deps import get_db
 from app.main import ALL_AVAILABLE_MIME_TYPES
 from tests.conftest import fastapi_client, override_get_db

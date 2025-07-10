@@ -6,7 +6,7 @@ from json import loads as json_loads
 from tests import get_message
 from app.error_messages import template_not_found
 
-from app.db.models.template import Template 
+from app.models.template import Template
 
 NUMBER_OF_TEMPLATES = 50
 

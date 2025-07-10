@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, Query as SqlQuery
 from accept_types import get_best_match
 from jinja2 import Environment as JinjaEnv
 
-from app.db.models.template import Template
+from app.models.template import Template
 from app.deps import get_db, get_file_storage, get_jinja_env, get_template_static_directory
 from app.settings import Settings, get_settings
 from app.util.path_util import tmp_zipfile_path
@@ -34,11 +34,11 @@ from app.exceptions import UnsupportedMIMEType
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(api: FastAPI):
     settings = get_settings()
-    app.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
-    app.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
-    app.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
+    api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+    api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
+    api.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
     yield 
 
 app = FastAPI(lifespan=lifespan)
@@ -134,6 +134,7 @@ def update_template(template_id: str,
 
     return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
 
+
 @app.patch("/template/{template_id}/update_details", response_model=TemplateDetailView)
 def update_template_details(template_id: str, template_details: dict = Body(...),
                             db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
@@ -148,6 +149,7 @@ def update_template_details(template_id: str, template_details: dict = Body(...)
         return JSONResponse(content={"message": invalid_json_field.format(e.args)}, status_code=HTTPStatus.BAD_REQUEST)
 
     return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
+
 
 def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:
     """
@@ -167,6 +169,7 @@ def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:
 
     return is_zipfile, zip_file_name
 
+
 @app.post("/template/{template_id}/compose", response_model=None)
 def compose_file(template_id: str, payload: dict = Body(...), 
                  page: int | None = Query(None), height: int | None = Query(None), 
@@ -175,6 +178,7 @@ def compose_file(template_id: str, payload: dict = Body(...),
                  template_static_directory: str = Depends(get_template_static_directory), 
                  db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
     return _compose(jinja_env, template_static_directory, db, template_id, "compose", lambda t: payload, width, height, page, accept)
+
 
 @app.get("/template/{template_id}/example", response_model=None)
 def example_compose(template_id: str, page: int | None = Query(None), 
