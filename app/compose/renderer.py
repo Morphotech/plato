@@ -54,7 +54,8 @@ class Renderer(ABC):
 
     """
     mime_type = OCTET_STREAM
-    """MIME type for the renderer. Should be implemented by subclass. e.g: 'text/plain', 'application/pdf'
+    """
+    MIME type for the renderer. Should be implemented by subclass. e.g: 'text/plain', 'application/pdf'
     """
     renderers: ClassVar[Dict[str, 'Renderer']] = dict()
 
@@ -68,7 +69,7 @@ class Renderer(ABC):
         Creates the template HTML string using the Jinja2 environment.
 
         Args:
-            compose_data:
+            compose_data: The data to fill the template with.
 
         Returns:
             str: HTML string for composed file.
@@ -88,6 +89,11 @@ class Renderer(ABC):
         """
         Renders Template onto a stream according to the Renderer's MIME type.
 
+        Args:
+            compose_data: The data to fill the template with.
+
+        Returns:
+            io.BytesIO: A file stream with the Renderer's MIME type.
         """
         with TemporaryDirectory() as temp_render_directory:
             compose_data = self.qr_render(temp_render_directory, compose_data)
@@ -152,9 +158,11 @@ class Renderer(ABC):
     def qr_render(self, output_folder: str, compose_data: dict):
         """
         Render QR codes, altering self.compose_data to replace qr_code properties with the filepath to their renders
+
         Args:
             output_folder: where to store the QR images renderer
             compose_data: the data to fill the template with
+
         Returns:
             dict: altered compose_data
         """
@@ -163,6 +171,7 @@ class Renderer(ABC):
         def set_nested(key_list: List[str], dict_: dict, value: str):
             """
             Sets dict_[key1, key2, ...] = value
+
             Args:
                 key_list: Nested key list
                 dict_: Dict to be iterated with key_list
@@ -253,6 +262,18 @@ class PNGRenderer(Renderer):
         super().__init__(template_model, jinja_env, template_static_directory)
 
     def print(self, html_string: str) -> io.BytesIO:
+        """
+        Prints the HTML string as a PNG image using WeasyPrint.
+
+        Args:
+            html_string: The HTML string to be printed as PNG.
+
+        Raises:
+            InvalidPageNumber: If the requested page number is invalid (negative or exceeds the number of pages).
+
+        Returns:
+            io.BytesIO: A file stream with the PNG image.
+        """
 
         with tempfile.NamedTemporaryFile() as target_file_html:
             html = HTML(string=html_string)
@@ -284,22 +305,36 @@ class HTMLRenderer(Renderer):
     mime_type = HTML_MIME
 
     def print(self, html_string: str) -> io.BytesIO:
+        """
+        Converts the given HTML string into a BytesIO stream encoded as UTF-8.
+
+        Args:
+            html_string (str): The HTML content to be rendered.
+
+        Returns:
+            io.BytesIO: A stream containing the UTF-8 encoded HTML content.
+        """
         return io.BytesIO(bytes(html_string, encoding="utf-8"))
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory:str, *args, **kwargs) -> io.BytesIO:
+def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory:str,
+            *args, **kwargs) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
 
     Args:
         template: The Template model to be used in the composition
-        mime_type: The desired output MIME type.
-        compose_data: The dict with the data to fill the template.
+        mime_type: The desired output MIME type
+        compose_data: The dict with the data to fill the template
+        jinja_env: The Jinja2 environment to be used for rendering the template
+        template_static_directory: The static directory for the template, used to load static files
         args: Additional arguments to be given to the specific renderer
         kwargs: Additional keyword arguments to be given to the specific renderer
+
     Raises:
         jsonschema.exceptions.ValidationError: When the compose_data is not valid for a given template
         RendererNotFound: When there is no Renderer for the given mime_type
+
     Returns:
         io.BytesIO: The Byte stream for the composed file.
     """
