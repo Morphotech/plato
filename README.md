@@ -143,7 +143,7 @@ We use [Calendar Versioning](https://calver.org/).
 
 ## Authors
 
-- **Tiago Santos** - _Initial work_ - tiago.santos@vizidox.com
-- **Rita Mariquitos** - rita.mariquitos@morphotech.com
-- **Joana Teixeira** - joana.teixeira@vizidox.com
+- **Tiago Santos** - _Initial work_
+- **Rita Mariquitos** - Improvements - rita.mariquitos@morphotech.com
+- **Joana Teixeira** - Improvements - joana.teixeira@morphotech.com
 - **Fábio André Damas** - Upgrade to fastapi\_ - fabio.damas@morphotech.com

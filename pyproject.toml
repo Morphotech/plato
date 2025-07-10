@@ -3,10 +3,10 @@ name = "plato"
 version = "2023.5.2"
 description = "Templating as a microservice"
 authors = [
-  "Tiago Santos <tiago.santos@vizidox.com>",
-  "Joana Teixeira <joana.teixeira@vizidox.com>",
-  "Hieu Le <hieu.le@morphotech.co.uk>",
-  "Rita Mariquitos <rita.mariquitos@morphotech.co.uk>",
+  "Tiago Santos",
+  "Joana Teixeira <joana.teixeira@morphotech.com>",
+  "Rita Mariquitos <rita.mariquitos@morphotech.com>",
+  "Fábio André Damas <fabio.damas@morphotech.com>"
 ]
 packages = [{ include = "app" }]
 
