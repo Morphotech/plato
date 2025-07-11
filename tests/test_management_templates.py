@@ -193,7 +193,7 @@ def _fleeting_database(client: TestClient, db: Session):
 @pytest.fixture(scope="class")
 def setup_s3():
     with mock_aws():
-        conn = boto3.resource('s3')
+        conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket=BUCKET_NAME)
         yield
 

@@ -55,7 +55,7 @@ def populate_db(fastapi_client_s3_storage, db: Session):
     db.commit()
 
 def create_s3_bucket() -> None:
-    conn = boto3.resource('s3')
+    conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=BUCKET_NAME)
 
 @pytest.fixture(scope="function")

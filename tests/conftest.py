@@ -17,13 +17,13 @@ from app.db.base_class import Base
 from app.deps import get_db
 from app.file_storage import DiskFileStorage, S3FileStorage
 from app.main import app
+from app.settings import get_settings
 
 settings = get_settings()
 settings.S3_BUCKET = 'test_template_bucket'
 
 
 TEST_DB_URL = f"postgresql://test:test@{'database:5432' if inside_container() else 'localhost:5456'}/test"
-
 
 
 def override_get_db():
@@ -80,7 +80,7 @@ def fastapi_client_s3_storage():
     async def mock_lifespan_s3_storage(app: FastAPI):
         app.dependency_overrides[get_db] = override_get_db
         with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = S3FileStorage(file_dir, BUCKET_NAME)
+            app.state.file_storage = S3FileStorage(file_dir, settings.S3_BUCKET)
             app.state.jinja_env = JinjaEnv(loader=DictLoader({}), 
                                            autoescape=select_autoescape(["html", "xml"]),
                                            auto_reload=True)
