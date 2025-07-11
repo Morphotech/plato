@@ -18,7 +18,9 @@ from app.deps import get_db
 from app.file_storage import DiskFileStorage, S3FileStorage
 from app.main import app
 
-BUCKET_NAME = 'test_template_bucket'
+settings = get_settings()
+settings.S3_BUCKET = 'test_template_bucket'
+
 
 TEST_DB_URL = f"postgresql://test:test@{'database:5432' if inside_container() else 'localhost:5456'}/test"
 

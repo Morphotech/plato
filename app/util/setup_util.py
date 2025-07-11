@@ -3,7 +3,6 @@ import os
 from jinja2 import Environment as JinjaEnv, FileSystemLoader, select_autoescape
 from app.compose import FILTERS
 from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType
-from .. import settings
 
 
 class InvalidFileStorageTypeException(Exception):
@@ -37,41 +36,21 @@ def create_template_environment(template_directory_path: str) -> JinjaEnv:
     return env
 
 
-def setup_swagger_ui(project_name: str, project_version: str) -> dict:
+def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str | None) -> PlatoFileStorage:
     """
-    Configurations to be used on the Swagger-ui page.
+    Initializes a correct instance of the Plato File Storage, depending on the env values.
 
     Args:
-        project_name: The project name to be displayed
-        project_version: The project version to be displayed
+        storage_type (str): The type of file storage to be used, either 'disk' or 's3'.
+        data_dir (str): The data directory for the file storage.
+        s3_bucket (str): The S3 bucket name for the file storage.
+
+    Raises:
+        InvalidFileStorageTypeException: If the given file storage type doesn't exist.
+
     Returns:
-        dict: The swagger ui configuration to be used with Flasgger
-    """
-    swagger_ui_config = {
-        'title': project_name,
-        'version': project_version,
-        'uiversion': 3,
-        'swagger': '2.0',
-        'favicon': "/static/favicon-32x32.png",
-        'swagger_ui_css': "/static/swagger-ui.css",
-        'swagger_ui_standalone_preset_js': '/static/swagger-ui-standalone-preset.js',
-        'description': ''
-    }
+        PlatoFileStorage: An instance of PlatoFileStorage.
 
-    return swagger_ui_config
-
-
-def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str) -> PlatoFileStorage:
-    """
-    Initializes a correct instance of the Plato File Storage, depending on the env values
-
-    :param storage_type: The storage type
-    :type storage_type: str
-
-    :raises InvalidFileStorageTypeException: If the given file storage type doesn't exist
-
-    :return: An instance of FileStorage
-    :rtype: class:`FileStorage`
     """
     file_storage: PlatoFileStorage
     if storage_type == StorageType.DISK:
