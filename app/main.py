@@ -21,14 +21,14 @@ from app.deps import get_db, get_file_storage, get_jinja_env, get_template_stati
 from app.settings import Settings, get_settings
 from app.util.path_util import tmp_zipfile_path
 from app.util.setup_util import create_template_environment, initialize_file_storage
-from app.views.template_detail_view import TemplateDetailView
+from app.schemas.template_detail_view import TemplateDetailSchema
 from app import file_storage
 from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
 from app.error_messages import template_not_found, resizing_unsupported, \
     single_page_unsupported, aspect_ratio_compromised, negative_number_invalid, \
     unsupported_mime_type, invalid_compose_json, invalid_zip_file, template_already_exists, \
     invalid_directory_structure, invalid_template_details, invalid_json_field
-from app.views.template_detail_view import TEMPLATE_UPDATE_SCHEMA
+from app.schemas.template_detail_view import TEMPLATE_UPDATE_SCHEMA
 from app.exceptions import UnsupportedMIMEType
 
 
@@ -51,32 +51,31 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@app.get("/templates/{template_id}", response_model=dict[str, Any])
-def template_by_id(template_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+@app.get("/templates/{template_id}", response_model=TemplateDetailSchema)
+def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateDetailSchema | JSONResponse:
     try:
         template: Template = db.query(Template).filter_by(id=template_id).one()
-        view = TemplateDetailView.view_from_template(template)
-        return view._asdict()
+        return TemplateDetailSchema.view_from_template(template)
     except NoResultFound:
         return JSONResponse(content={"message": template_not_found.format(template_id)}, status_code=HTTPStatus.NOT_FOUND)
 
-@app.get("/templates")
-def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[dict[str, Any]]:
+@app.get("/templates", response_model=List[TemplateDetailSchema])
+def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[TemplateDetailSchema]:
     template_query: SqlQuery = db.query(Template)
 
     if tags:
         template_query = template_query.filter(Template.tags.contains(db_cast(tags, ARRAY(String))))
-    json_views = [TemplateDetailView.view_from_template(template)._asdict() for
-                      template in
-                      template_query]
+    json_views = [TemplateDetailSchema.view_from_template(template) for
+                  template in
+                  template_query]
 
     return json_views
 
-@app.post("/template/create", response_model=TemplateDetailView)
+@app.post("/template/create", response_model=TemplateDetailSchema)
 def create_template(zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db), 
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
+                    settings: Settings = Depends(get_settings)) -> TemplateDetailSchema | JSONResponse:
     is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
     if not is_zipfile:
         return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -100,16 +99,15 @@ def create_template(zipfile: UploadFile = File(...), template_details: str = For
     except FileNotFoundError:
         return JSONResponse(content={"message": invalid_directory_structure}, status_code=HTTPStatus.BAD_REQUEST)
     
-    return JSONResponse(content=TemplateDetailView.view_from_template(new_template)._asdict(), status_code=HTTPStatus.CREATED)
+    return JSONResponse(content=TemplateDetailSchema.view_from_template(new_template).model_dump_json(), status_code=HTTPStatus.CREATED)
 
 
-
-@app.put("/template/{template_id}/update", response_model=TemplateDetailView)
+@app.put("/template/{template_id}/update", response_model=TemplateDetailSchema)
 def update_template(template_id: str,
                     zipfile: UploadFile = File(...), template_details: str = Form(...),
                     db: Session = Depends(get_db),
                     file_storage: file_storage.PlatoFileStorage = Depends(get_file_storage),
-                    settings: Settings = Depends(get_settings)) -> TemplateDetailView | JSONResponse:
+                    settings: Settings = Depends(get_settings)) -> TemplateDetailSchema | JSONResponse:
     is_zipfile, zip_file_name = _save_and_validate_zipfile(zipfile)
     if not is_zipfile:
         return JSONResponse(content={"message": invalid_zip_file}, status_code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -132,12 +130,12 @@ def update_template(template_id: str,
     except ValidationError as ve:
         return JSONResponse(content={"message": invalid_template_details.format(ve.message)}, status_code=HTTPStatus.BAD_REQUEST)
 
-    return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
+    return JSONResponse(content=TemplateDetailSchema.view_from_template(template).model_dump_json())
 
 
-@app.patch("/template/{template_id}/update_details", response_model=TemplateDetailView)
+@app.patch("/template/{template_id}/update_details", response_model=TemplateDetailSchema)
 def update_template_details(template_id: str, template_details: dict = Body(...),
-                            db: Session = Depends(get_db)) -> TemplateDetailView | JSONResponse:
+                            db: Session = Depends(get_db)) -> TemplateDetailSchema | JSONResponse:
     try:
         # update template into database
         template = db.query(Template).filter_by(id=template_id).one()
@@ -148,7 +146,7 @@ def update_template_details(template_id: str, template_details: dict = Body(...)
     except KeyError as e:
         return JSONResponse(content={"message": invalid_json_field.format(e.args)}, status_code=HTTPStatus.BAD_REQUEST)
 
-    return JSONResponse(content=TemplateDetailView.view_from_template(template)._asdict())
+    return JSONResponse(content=TemplateDetailSchema.view_from_template(template).model_dump_json())
 
 
 def _save_and_validate_zipfile(zip_file: UploadFile) -> Tuple[bool, str]:

@@ -184,6 +184,7 @@ class S3FileStorage(PlatoFileStorage, ABC):
         Args:
             target_directory: Target directory to store the templates in
             template_directory: Base directory for S3 Bucket
+            db (Session): The database session to query templates from
         """
         old_templates_path = pathlib.Path(target_directory)
         if old_templates_path.exists():
