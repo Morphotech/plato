@@ -1,4 +1,6 @@
 from tempfile import TemporaryDirectory
+from unittest.mock import patch, call
+
 import pytest
 import boto3
 import pathlib
@@ -80,9 +82,18 @@ def populate_s3_with_missing_template_file():
         write_to_s3(bucket_name=BUCKET_NAME, file_paths=[static_file])
         yield
 
+
 @pytest.mark.usefixtures("populate_db")
 class TestS3ApplicationSetup:
-    def test_success_case(self, fastapi_client_s3_storage: TestClient, populate_s3, db: Session):
+
+    @patch('smart_open.s3.iter_bucket')
+    def test_success_case(self, mock_iter_bucket, fastapi_client_s3_storage: TestClient, populate_s3, db: Session):
+        mock_iter_bucket.return_value = [
+            ('templating/templates/0/0', b'file content'),
+            ('templating/static/0/abc_1', b'static content'),
+            ('templating/static/0/abc_2', b'static content'),
+        ]
+
         with TemporaryDirectory() as temp:
             # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
             template_dir_name = create_child_temp_folder(temp)
@@ -98,7 +109,13 @@ class TestS3ApplicationSetup:
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
 
-    def test_missing_template_file(self, fastapi_client_s3_storage, populate_s3_with_missing_template_file, db: Session):
+        calls = [call(bucket_name='test_template_bucket', prefix='templating/static'),
+                 call(bucket_name='test_template_bucket', prefix='templating/templates/0/0')]
+        mock_iter_bucket.assert_has_calls(calls)
+
+    @patch('smart_open.s3.iter_bucket')
+    def test_missing_template_file(self, mock_iter_bucket, fastapi_client_s3_storage, populate_s3_with_missing_template_file, db: Session):
+        mock_iter_bucket.side_effect = ([('templating/static/0/abc_1', b'static content'),], [])
         with pytest.raises(NoIndexTemplateFound):
             with TemporaryDirectory() as temp:
                 # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
@@ -106,3 +123,6 @@ class TestS3ApplicationSetup:
                 file_storage = fastapi_client_s3_storage.app.state.file_storage
                 file_storage.load_templates(template_dir_name, BASE_DIR, db)
 
+        calls = [call(bucket_name='test_template_bucket', prefix='templating/static'),
+                 call(bucket_name='test_template_bucket', prefix='templating/templates/0/0')]
+        mock_iter_bucket.assert_has_calls(calls)
