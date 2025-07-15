@@ -1,60 +1,70 @@
+import json
 from typing import Optional
 
-import click
-from flask import Flask
-from flask.cli import with_appcontext
-import json
-from .db import db
-from .db.models import Template
-from .file_storage import StorageType
-from .settings import TEMPLATE_DIRECTORY, TEMPLATE_DIRECTORY_NAME, STORAGE_TYPE
-from .util.setup_util import initialize_file_storage
+import typer
+from sqlalchemy.orm import Session
+
+from app.models.template import Template
+from app.deps import get_db
+from app.settings import get_settings
+from app.util.setup_util import initialize_file_storage
+
+app_cli = typer.Typer()
+settings = get_settings()
 
 
-def register_cli_commands(app: Flask):
-    @app.shell_context_processor
-    def make_shell_context():
-        return dict(app=app, db=db, Template=Template)
+def get_session() -> Session:
+    # Use the same session logic as FastAPI app
+    return next(get_db())
 
-    @app.cli.command("register_new_template")
-    @click.argument("json_file", type=click.File("r"))
-    @with_appcontext
-    def register_new_template(json_file):
-        """
-        Imports new template from json file and inserts it in database
-        Args:
-            json_file: file containing the template json
-        """
-        template_entry_json = json.load(json_file)
-        new_template = Template.from_json_dict(template_entry_json)
-        db.session.add(new_template)
-        db.session.commit()
+@app_cli.command()
+def register_new_template(json_file_path: str):
+    """
+    Imports new template from json file and inserts it in database.
 
-    @app.cli.command("export_template")
-    @click.argument("output", type=click.File("w"))
-    @click.option("--template-id", default=None, type=click.STRING)
-    @with_appcontext
-    def export_template(output, template_id: Optional[str] = None):
-        """
-        Export new template to file
-        Args:
-            output: output file
-            template_id: template to be exported
-        """
-        if template_id is None:
-            templates = Template.query.all()
-            template_options = "\n".join([template.id for template in templates])
-            click.echo(template_options)
-            template_id = click.prompt("Please enter the id for the template you wish to export")
-        template = Template.query.filter_by(id=template_id).one()
-        json.dump(template.json_dict(), output)
+    Args:
+        json_file_path (str): Path to the JSON file containing the template definition.
+    """
+    session = get_session()
+    with open(json_file_path, "r") as f:
+        template_entry_json = json.load(f)
+    new_template = Template.from_json_dict(template_entry_json)
+    session.add(new_template)
+    session.commit()
+    typer.echo("Template registered.")
 
-    @app.cli.command("refresh")
-    @with_appcontext
-    def refresh_local_templates():
-        """
-        Refresh local templates by loading the templates from AWS S3 Bucket
-        """
-        file_storage = initialize_file_storage(STORAGE_TYPE)
-        with app.app_context():
-            file_storage.load_templates(TEMPLATE_DIRECTORY, TEMPLATE_DIRECTORY_NAME)
+@app_cli.command()
+def export_template(output: str, template_id: Optional[str] = None):
+    """
+    Export template to file.
+
+    If template_id is not provided, it will list all available templates and prompt for selection.
+
+    Args:
+        output (str): The output file path where the template will be saved.
+        template_id (Optional[str]): The ID of the template to export. If None, it will prompt for selection.
+    """
+    session = get_session()
+    if template_id is None:
+        templates = session.query(Template).all()
+        template_options = "\n".join([template.id for template in templates])
+        typer.echo(template_options)
+        template_id = typer.prompt("Please enter the id for the template you wish to export")
+    template = session.query(Template).filter_by(id=template_id).one()
+    with open(output, "w") as f:
+        json.dump(template.json_dict(), f)
+    typer.echo(f"Template {template_id} exported to {output}.")
+
+@app_cli.command()
+def refresh():
+    """
+    Refresh local templates by loading the templates from file storage.
+    """
+    file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+    with get_session() as db_session:
+        file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db_session)
+
+    typer.echo("Templates refreshed.")
+
+if __name__ == "__main__":
+    app_cli()
