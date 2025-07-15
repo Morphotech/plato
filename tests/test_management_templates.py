@@ -208,7 +208,7 @@ class TestManageTemplates:
         with open(f'{CURRENT_TEST_PATH}/resources/invalid_file.zip', 'rb') as file:
             template_details_str = json.dumps(TEMPLATE_DETAILS_2)
             data: dict = {'template_details': template_details_str}
-            result = fastapi_client_local_storage.post(self.CREATE_TEMPLATE_ENDPOINT, data=data, 
+            result = fastapi_client_local_storage.post(self.CREATE_TEMPLATE_ENDPOINT, data=data,
                                                        files={ "zipfile": ('invalid_file.zip', file, 'application/zip') } if file is not None else None)
             assert result.status_code == HTTPStatus.BAD_REQUEST
 
@@ -227,7 +227,7 @@ class TestManageTemplates:
         template_details_str = json.dumps(TEMPLATE_DETAILS_2)
         data: dict = {'template_details': template_details_str}
         result = fastapi_client_local_storage.post(self.CREATE_TEMPLATE_ENDPOINT, data=data,
-                                           files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
+                                                   files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
         assert result.status_code == HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
     def test_create_new_template_ok(self, fastapi_client_local_storage: TestClient, db: Session):
@@ -270,7 +270,7 @@ class TestManageTemplates:
         data: dict = {'template_details': template_details_str}
 
         result = fastapi_client_local_storage.put(self.UPDATE_TEMPLATE.format(TEMPLATE_ID), data=data,
-                                          files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
+                                                  files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
         assert result.status_code == HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
     def test_update_template_not_found(self, fastapi_client_local_storage: TestClient):
@@ -281,7 +281,7 @@ class TestManageTemplates:
         data: dict = {'template_details': template_details_str}
 
         result = fastapi_client_local_storage.put(self.UPDATE_TEMPLATE.format(template_id), data=data,
-                                          files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
+                                                  files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
         assert result.status_code == HTTPStatus.NOT_FOUND
 
     def test_update_template_ok(self, fastapi_client_local_storage: TestClient, db: Session):
@@ -290,7 +290,7 @@ class TestManageTemplates:
         template_details_str = json.dumps(TEMPLATE_DETAILS_1_UPDATE)
         data: dict = {'template_details': template_details_str}
         result = fastapi_client_local_storage.put(self.UPDATE_TEMPLATE.format(TEMPLATE_ID), data=data,
-                                          files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
+                                                  files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
         assert result.status_code == HTTPStatus.OK
         template_model: Template = db.query(Template).filter_by(id=TEMPLATE_ID).one()
         assert template_model.example_composition is not None
@@ -347,7 +347,7 @@ class TestManageTemplatesS3FileStorage:
             filename = f'{template_id}.zip'
 
             result = fastapi_client_s3_storage.post(self.CREATE_TEMPLATE_ENDPOINT, data=data,
-                                            files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
+                                                    files={"zipfile": (filename, file, 'application/zip')} if file is not None else None)
             assert result.status_code == HTTPStatus.CREATED
             template_model: Template = db.query(Template).filter_by(id=template_id).one()
             assert template_model is not None

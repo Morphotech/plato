@@ -5,6 +5,8 @@ from PIL import Image
 import tempfile
 from pathlib import Path
 from fastapi import FastAPI
+
+from app.deps import get_db
 from app.file_storage import DiskFileStorage
 from fastapi.testclient import TestClient
 import pytest
@@ -18,9 +20,7 @@ from app.error_messages import aspect_ratio_compromised, resizing_unsupported, \
                             unsupported_mime_type
 
 from app.models.template import Template
-from app.deps import get_db
-from app.main import ALL_AVAILABLE_MIME_TYPES
-from tests.conftest import fastapi_client, override_get_db
+from app.main import ALL_AVAILABLE_MIME_TYPES, app
 from tests import get_message
 
 
@@ -30,60 +30,65 @@ QR_CODE_TEMPLATE_ID = 'qr_code'
 NO_IMAGE_TEMPLATE_ID = PNG_IMAGE_TEMPLATE_ID.replace('p', 'u')
 PNG_IMAGE_NAME = "balloons.png"
 
+
 @pytest.fixture(scope='class')
-def client_with_jinjaenv():
+def client_with_jinjaenv(db):
     template_loader = DictLoader({})
+
     plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}"
     template_loader.mapping[plain_text_jinja_id] = "{{ p.plain }}"
 
     png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}"
-    template_loader.mapping[png_template_jinja_id] = \
-        '<!DOCTYPE html>' \
-        '<html>' \
-        '<body>' \
-        '<img id="img_" src="file://{{ template_static }}' \
-        f'{PNG_IMAGE_NAME}">' \
-        '</img>' \
-        '</body>' \
+    template_loader.mapping[png_template_jinja_id] = (
+        '<!DOCTYPE html>'
+        '<html>'
+        '<body>'
+        '<img id="img_" src="file://{{ template_static }}' + f'{PNG_IMAGE_NAME}">'
+        '</img>'
+        '</body>'
         '</html>'
+    )
 
     no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}"
-    template_loader.mapping[no_image_template_jinja_id] = \
-        '<!DOCTYPE html>' \
-        '<html>' \
-        '<body>' \
-        '<img id="img_" src="file://{{ template_static }}' \
-        'no_img.png">' \
-        '</img>' \
-        '</body>' \
+    template_loader.mapping[no_image_template_jinja_id] = (
+        '<!DOCTYPE html>'
+        '<html>'
+        '<body>'
+        '<img id="img_" src="file://{{ template_static }}no_img.png">'
+        '</img>'
+        '</body>'
         '</html>'
+    )
 
     qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}"
-    template_loader.mapping[qr_code_template_jinja_id] = \
-        '<!DOCTYPE html>' \
-        '<html>' \
-        '<body>' \
-        '<img src="file://{{ p.qr_code }}" alt="qr_fail">' \
-        '</body>' \
+    template_loader.mapping[qr_code_template_jinja_id] = (
+        '<!DOCTYPE html>'
+        '<html>'
+        '<body>'
+        '<img src="file://{{ p.qr_code }}" alt="qr_fail">'
+        '</body>'
         '</html>'
+    )
 
     @asynccontextmanager
     async def mock_lifespan(app: FastAPI):
-        app.dependency_overrides[get_db] = override_get_db
         with tempfile.TemporaryDirectory() as file_dir:
             app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(loader=template_loader,
-                                           autoescape=select_autoescape(["html", "xml"]),
-                                            auto_reload=True)
-            current_folder = str(Path(__file__).resolve().parent)
-            app.state.template_static_directory = f"{current_folder}/resources/static"
+            app.state.jinja_env = JinjaEnv(
+                loader=template_loader,
+                autoescape=select_autoescape(["html", "xml"]),
+                auto_reload=True
+            )
+            current_folder = Path(__file__).resolve().parent
+            app.state.template_static_directory = str(current_folder / "resources/static")
             yield
-        app.dependency_overrides.clear()
-    yield from fastapi_client(mock_lifespan)
-    del template_loader.mapping[plain_text_jinja_id]
-    del template_loader.mapping[png_template_jinja_id]
-    del template_loader.mapping[no_image_template_jinja_id]
-    del template_loader.mapping[qr_code_template_jinja_id]
+
+    app.dependency_overrides[get_db] = lambda: db
+    app.router.lifespan_context = mock_lifespan
+
+    with TestClient(app) as client:
+        yield client
+
 
 @pytest.fixture(scope="class")
 def template_test_examples(client_with_jinjaenv: TestClient, db: Session):

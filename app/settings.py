@@ -14,12 +14,16 @@ class Settings(BaseSettings):
     DB_HOST: str 
     DB_PORT: int
     SQLALCHEMY_DATABASE_URI: str | None = None
+    POSTGRES_VER: str
 
     STORAGE_TYPE: str
     TEMPLATE_DIRECTORY: str
     TEMPLATE_DIRECTORY_NAME: str
-    DATA_DIR: str 
+    DATA_DIR: str
+
     S3_BUCKET: str | None
+
+    IN_DOCKER: bool = False
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     def assemble_db_connection(cls, v: str | None, values: ValidationInfo) -> str:
