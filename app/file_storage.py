@@ -190,16 +190,13 @@ class S3FileStorage(PlatoFileStorage, ABC):
         if old_templates_path.exists():
             shutil.rmtree(old_templates_path)
 
-        # TODO: Not sure how is this different than just asking for every template?
-        # templates = Template.query.with_entities(Template.id).all()
-        templates = db.query(Template).all()
-
         # get static files
         static_files = self.get_file(path=base_static_path(template_directory),
                                      template_directory=template_directory)
 
         self.write_files(files=static_files, target_directory=target_directory)
 
+        templates = db.query(Template).all() # todo use template
         for template in templates:
             # get template content
             template_files = self.get_file(path=template_path(template_directory, template.id),

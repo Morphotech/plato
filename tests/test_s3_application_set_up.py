@@ -56,9 +56,11 @@ def populate_db(fastapi_client_s3_storage, db: Session):
     db.query(Template).delete()
     db.commit()
 
+
 def create_s3_bucket() -> None:
     conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=BUCKET_NAME)
+
 
 @pytest.fixture(scope="function")
 def populate_s3():
@@ -72,6 +74,7 @@ def populate_s3():
         template_file_1 = get_template_file_path(template_id="0")
         write_to_s3(bucket_name=BUCKET_NAME, file_paths=[template_file_1])
         yield
+
 
 @pytest.fixture(scope='function')
 def populate_s3_with_missing_template_file():
