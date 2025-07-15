@@ -100,7 +100,7 @@ poetry run fastapi dev
 This will make the application available at http://localhost:8000/docs/
 where you can use swagger-ui to interact with the application.
 
-_Note_: If you run the app through a server instead of main, make sure you run `flask refresh`
+_Note_: If you run the app through a server instead of main, make sure you run `python app/cli.py refresh`
 so it can obtain the most recent templates from S3.
 
 ## Running the tests
@@ -121,9 +121,21 @@ docker-compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato
 
 ## Use Command Line Interface
 
+You can use the CLI to manage templates directly from the command line. To use it, you need run the command `python app/cli.py <command> <args>`.
+
 ```bash
-flask <command>
+# Register a new template from a JSON file
+python app/cli.py register-new-template path/to/template.json
+
+# Export a template to a file (will prompt for template id if not provided)
+python app/cli.py export-template output.json --template-id=your_template_id
+
+# Refresh local templates from file storage
+python app/cli.py refresh
 ```
+
+To see the available options for each command, you can run `python app/cli.py <command> --help`. To list all commands and get instructions, run `python app/cli.py --help`.
+
 
 ## How to use in your project
 
@@ -132,7 +144,7 @@ Please check the detailed instructions on the [official documentation](https://p
 
 ## Built With
 
-- [Fastapi](https://fastapi.tiangolo.com/) - Web framework
+- [FastaAPI](https://fastapi.tiangolo.com/) - Web framework
 - [Poetry](https://python-poetry.org/) - Dependency Management
 - [Jinja2](https://palletsprojects.com/p/jinja/) - For HTML composition
 - [Weasyprint](https://weasyprint.org/) - For PDF generation from HTML
@@ -146,4 +158,4 @@ We use [Calendar Versioning](https://calver.org/).
 - **Tiago Santos** - _Initial work_
 - **Rita Mariquitos** - Improvements - rita.mariquitos@morphotech.com
 - **Joana Teixeira** - Improvements - joana.teixeira@morphotech.com
-- **Fábio André Damas** - Upgrade to fastapi\_ - fabio.damas@morphotech.com
+- **Fábio André Damas** - Upgrade to FastAPI - fabio.damas@morphotech.com
