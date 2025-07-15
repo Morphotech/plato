@@ -1,9 +1,11 @@
+import os
 from functools import lru_cache
 
 from pydantic import field_validator, PostgresDsn
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+SETTINGS_DIR = os.path.dirname(__file__)
 
 class Settings(BaseSettings):
     DB_DATABASE: str
@@ -30,7 +32,10 @@ class Settings(BaseSettings):
             path=values.data['DB_DATABASE'],
         ).unicode_string()
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        extra="ignore",
+        env_file=[os.path.join(SETTINGS_DIR, "../.env")]
+    )
 
 
 @lru_cache()
