@@ -3,7 +3,7 @@
 ## Create a Template
 
 ```shell
-curl -X POST "http://localhost:5000/template/create" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "zipfile=<file>>;type=application/zip" -F "template_details=<details>>"
+curl -X POST "http://localhost:8000/template/create" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "zipfile=<file>>;type=application/zip" -F "template_details=<details>>"
 ```
 
 ```python
@@ -46,7 +46,7 @@ The template_details parameter should be in json format and include all relevant
 
 ### HTTP Request
 
-`POST http://localhost:5000/template/create`
+`POST http://localhost:8000/template/create`
 
 ### Returns
 
@@ -63,7 +63,7 @@ If successful, the HTTP response is a 201 CREATED, along with the created templa
 ## Update a Template
 
 ```shell
-curl -X PUT "http://localhost:5000/template/<template_id>/update" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "zipfile=<file>>;type=application/zip" -F "template_details=<details>>"
+curl -X PUT "http://localhost:8000/template/<template_id>/update" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "zipfile=<file>>;type=application/zip" -F "template_details=<details>>"
 ```
 
 ```python
@@ -90,7 +90,7 @@ The format of the zipfile and the template_details parameters is the same as in 
 
 ### HTTP Request
 
-`PUT http://localhost:5000/template/<template_id>/update`
+`PUT http://localhost:8000/template/<template_id>/update`
 
 ### Returns
 
@@ -107,7 +107,7 @@ If successful, the HTTP response is a 200 OK, along with the updated template.
 ## Update Template Details
 
 ```shell
-curl -X PATCH "http://localhost:5000/template/<template_id>/update_details" -H  "accept: application/json" -H  "Content-Type: application/json" -d <details>
+curl -X PATCH "http://localhost:8000/template/<template_id>/update_details" -H  "accept: application/json" -H  "Content-Type: application/json" -d <details>
 ```
 
 ```python
@@ -134,7 +134,7 @@ The format of the template_details parameter is the same as in the template crea
 
 ### HTTP Request
 
-`PATCH http://localhost:5000/template/<template_id>/update_details`
+`PATCH http://localhost:8000/template/<template_id>/update_details`
 
 ### Returns
 

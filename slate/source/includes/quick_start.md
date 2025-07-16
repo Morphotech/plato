@@ -49,7 +49,6 @@ plato:
     DB_PASSWORD: <PASSWORD>
     DB_DATABASE: <DB>
     S3_BUCKET: <PLATO_BUCKET>
-    S3_TEMPLATE_DIR: <PLATO_BASE_DIRECTORY>
     STORAGE_TYPE: <STORAGE_TYPE>
     POSTGRES_VER: <{POSTGRES_VER>
   depends_on:
@@ -84,7 +83,7 @@ The *Alembic* table can be ignored, since it is used for migrations.
 You can directly copy the accompanying docker-compose configuration to your project, but make sure to fill in the missing variables:
 
 * S3_BUCKET: The name of the bucket on S3 to be used
-* S3_TEMPLATE_DIR: The base directory for Plato templates on the S3 bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
+* TEMPLATE_DIRECTORY_NAME: The base directory for Plato templates on the S3 bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
   value would be "plato".
 * STORAGE_TYPE: The storage type to be used by Plato. Currently, only "s3" or "disk" are supported.
 * POSTGRES_VER: The Postgres version to be used by Plato. 

@@ -13,13 +13,13 @@ As an example, Plato can be used to define and render custom HTML emails.
 Every endpoint available on Plato is described and accompanied by a visual example of how the API responds.
 For an improved experience when integrating Plato to your code, you can import our libraries:
 
-- Python: <a href="TBD">plato-helper-py</a> on PyPi TODO Link
+- Python: <a href="https://pypi.org/project/plato-helper-py/">plato-helper-py</a> on PyPi TODO Link
 - Java: <a href="TBD">plato-helper-java</a> on Nexus TODO Link
 
 All Python examples used in the examples are from the above library. 
 
 When executing the Plato API, a swagger page is provided, which can be used for testing or to get more information about
-the endpoints. Locally, it is hosted on [http://localhost:5000/apidocs/](http://localhost:5000/apidocs/). If you are 
+the endpoints. Locally, it is hosted on [http://localhost/docs/](http://localhost/docs/). If you are 
 using our Docker image, you can host it on any port.
 
 Please check our [Privacy Policy](https://vizidox.com/privacypolicy) for more details on data collection. Furthermore, by using 

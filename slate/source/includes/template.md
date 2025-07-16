@@ -49,7 +49,7 @@ variables in the HTML file.
 ## Get All Templates
  
 ```shell
-curl -X GET "http://localhost:5000/templates/" -H  "accept: application/json"
+curl -X GET "http://localhost:8000/templates/" -H  "accept: application/json"
 ```
 
 ```python
@@ -69,7 +69,7 @@ in the same requests. All the tags provided are used to filter for templates tha
 
 ### HTTP Request
 
-`GET http://localhost:5000/templates/?tags=abc&tags=xyz`
+`GET http://localhost:8000/templates/?tags=abc&tags=xyz`
 
 ### Returns
 
@@ -79,14 +79,14 @@ If successful, the HTTP response is a 200 OK, along with all templates.
 ## Get A Template
  
 ```shell
-curl -X GET "http://localhost:5000/templates/<template_id>" -H  "accept: application/json"
+curl -X GET "http://localhost:8000/templates/<template_id>" -H  "accept: application/json"
 ```
 
 Retrieves a specific template and its details. 
 
 ### HTTP Request
 
-`GET "http://localhost:5000/templates/<template_id>"`
+`GET "http://localhost:8000/templates/<template_id>"`
 
 ### Returns
 
@@ -101,7 +101,7 @@ If successful, the HTTP response is a 200 OK, along with the template.
 ## Compose File
  
 ```shell
-curl -X POST "http://localhost:5000/template/<template_id>/compose" -H  "accept: <mime_type>" -H "Content-Type: application/json" -d "{\"recipient_name\": \"Alan Turing\"}"
+curl -X POST "http://localhost:8000/template/<template_id>/compose" -H  "accept: <mime_type>" -H "Content-Type: application/json" -d "{\"recipient_name\": \"Alan Turing\"}"
 ```
 
 ```python
@@ -129,7 +129,7 @@ Other parameters include:
 
 ### HTTP Request
 
-`POST http://localhost:5000/template/<template_id>/compose`
+`POST http://localhost:8000/template/<template_id>/compose`
 
 ### Returns
 
@@ -147,7 +147,7 @@ If successful, the HTTP response is a 200 OK, along with the file.
 ## Compose Example
  
 ```shell
-curl -X GET "http://localhost:5000/template/<template_id>/example" -H  "accept: <mime_type>
+curl -X GET "http://localhost:8000/template/<template_id>/example" -H  "accept: <mime_type>
 ```
 
 ```python
@@ -174,7 +174,7 @@ Other parameters include:
 
 ### HTTP Request
 
-`GET http://localhost:5000/template/<template_id>/example`
+`GET http://localhost:8000/template/<template_id>/example`
 
 ### Returns
 

@@ -62,10 +62,10 @@ First, make sure you actually _have_ a DATA_DIR, by creating a folder named 'dat
 e.g TEMPLATE_DIRECTORY=/home/carloscoda/projects/plato/data/templates
 
 A couple more environment variables need to be filled as well.
-S3_BUCKET is the S3 Bucket you decide to use and S3_TEMPLATE_DIR is the path to
+S3_BUCKET is the S3 Bucket you decide to use and TEMPLATE_DIRECTORY_NAME is the path to
 the directory where your templates are stored.
 
-e.g S3_TEMPLATE_DIR=projects/templating
+e.g TEMPLATE_DIRECTORY_NAME=projects/templating
 
 Make sure the bucket is accessible by providing credentials to the service by
 storing the S3 AWS credentials in your DATA_DIR/aws/.
