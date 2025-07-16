@@ -99,14 +99,14 @@ class TestS3ApplicationSetup:
 
         with TemporaryDirectory() as temp:
             # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
-            template_dir_name = create_child_temp_folder(temp)
+            template_dir = create_child_temp_folder(temp)
             
             file_storage = fastapi_client_s3_storage.app.state.file_storage
-            file_storage.load_templates(template_dir_name, BASE_DIR, db)
+            file_storage.load_templates(template_dir, BASE_DIR, db)
 
-            static_file_1 = f'{template_dir_name}/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
-            static_file_2 = f'{template_dir_name}/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
-            template_file_1 = f'{template_dir_name}/{get_local_template_file_path(template_id="0")}'
+            static_file_1 = f'{template_dir}/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
+            static_file_2 = f'{template_dir}/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
+            template_file_1 = f'{template_dir}/{get_local_template_file_path(template_id="0")}'
 
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
@@ -122,9 +122,9 @@ class TestS3ApplicationSetup:
         with pytest.raises(NoIndexTemplateFound):
             with TemporaryDirectory() as temp:
                 # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
-                template_dir_name = create_child_temp_folder(temp)
+                template_dir = create_child_temp_folder(temp)
                 file_storage = fastapi_client_s3_storage.app.state.file_storage
-                file_storage.load_templates(template_dir_name, BASE_DIR, db)
+                file_storage.load_templates(template_dir, BASE_DIR, db)
 
         calls = [call(bucket_name='test_template_bucket', prefix='templating/static'),
                  call(bucket_name='test_template_bucket', prefix='templating/templates/0/0')]

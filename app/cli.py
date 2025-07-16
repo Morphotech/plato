@@ -14,7 +14,6 @@ settings = get_settings()
 
 
 def get_session() -> Session:
-    # Use the same session logic as FastAPI app
     return next(get_db())
 
 @app_cli.command()
@@ -63,8 +62,8 @@ def refresh():
     file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
     with get_session() as db_session:
         file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db_session)
-
     typer.echo("Templates refreshed.")
+
 
 if __name__ == "__main__":
     app_cli()

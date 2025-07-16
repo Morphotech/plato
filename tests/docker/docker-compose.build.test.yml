@@ -28,7 +28,6 @@ services:
       DB_PASSWORD: test
       DB_DATABASE: test
       S3_BUCKET: test_template_bucket
-      S3_TEMPLATE_DIR: templating
       STORAGE_TYPE: s3
     volumes:
       - ${API_DIRECTORY}/coverage:/app/coverage

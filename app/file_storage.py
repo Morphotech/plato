@@ -38,8 +38,7 @@ class NoIndexTemplateFound(FileStorageError):
         Args:
             template_id (str): the id of the template
         """
-        message = f"No index template file found. Template_id: {template_id}"
-        super(NoIndexTemplateFound, self).__init__(message)
+        super().__init__(f"No index template file found. Template_id: {template_id}")
 
 
 class PlatoFileStorage(ABC):
@@ -121,7 +120,7 @@ class PlatoFileStorage(ABC):
         pass
 
 
-class DiskFileStorage(PlatoFileStorage, ABC):
+class DiskFileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str):
         super().__init__(data_directory)
 
@@ -136,9 +135,9 @@ class DiskFileStorage(PlatoFileStorage, ABC):
         self.write_file_locally(input_file, path)
 
 
-class S3FileStorage(PlatoFileStorage, ABC):
+class S3FileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
-        super(S3FileStorage, self).__init__(data_directory)
+        super().__init__(data_directory)
         self.bucket_name = bucket_name
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
@@ -176,31 +175,34 @@ class S3FileStorage(PlatoFileStorage, ABC):
 
         self.write_file_locally(input_file, path)
 
-    def load_templates(self, target_directory: str, template_directory: str, db: Session) -> None:
+    def load_templates(self, target_directory: str, template_directory_name: str, db: Session) -> None:
         """
         Gets templates from the AWS S3 bucket which are associated with ones available in the DB.
-        Expected directory structure is {s3_template_directory}/{template_id}
+        Expected directory structure is {template_directory_name}/{template_id}
 
         Args:
             target_directory: Target directory to store the templates in
-            template_directory: Base directory for S3 Bucket
+            template_directory_name: Base directory name for S3 Bucket
             db (Session): The database session to query templates from
+
+        Raises:
+            NoIndexTemplateFound: If no index template file is found for a given template id
         """
         old_templates_path = pathlib.Path(target_directory)
         if old_templates_path.exists():
             shutil.rmtree(old_templates_path)
 
         # get static files
-        static_files = self.get_file(path=base_static_path(template_directory),
-                                     template_directory=template_directory)
+        static_files = self.get_file(path=base_static_path(template_directory_name),
+                                     template_directory=template_directory_name)
 
         self.write_files(files=static_files, target_directory=target_directory)
 
         templates = db.query(Template).all() # todo use template
         for template in templates:
             # get template content
-            template_files = self.get_file(path=template_path(template_directory, template.id),
-                                           template_directory=template_directory)
+            template_files = self.get_file(path=template_path(template_directory_name, template.id),
+                                           template_directory=template_directory_name)
             if not template_files:
                 raise NoIndexTemplateFound(template.id)
             self.write_files(files=template_files, target_directory=target_directory)
