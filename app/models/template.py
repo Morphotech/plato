@@ -42,55 +42,6 @@ class Template(Base):
         self.example_composition = example_composition
         self.tags = tags
 
-    @classmethod
-    def from_json_dict(cls, json_: dict) -> 'Template':
-        """
-        Builds a model from a dictionary that follows the export standard.
-
-        Args:
-            json_: dict with template details.
-
-        Returns:
-            Template
-        """
-
-        return Template(id_=json_["title"],
-                        schema=json_["schema"],
-                        type_=json_["type"],
-                        metadata=json_["metadata"],
-                        example_composition=json_["example_composition"],
-                        tags=json_["tags"])
-
-    def update_fields(self, json_: dict):
-        """
-        Updates some fields of a template object from a dictionary. It does not update the template id.
-
-        Args:
-            json_: dict with template details.
-
-        Raises a KeyError exception if key does not exist
-        """
-        for key, value in json_.items():
-            if hasattr(self, key) and key not in self.id:
-                setattr(self, key, value)
-            else:
-                raise KeyError(key)
-
-    def json_dict(self) -> dict:
-        """
-        Exports template data as dict.
-
-        Returns:
-            dict
-        """
-        json_ = dict()
-        json_["title"] = self.id
-        json_["schema"] = self.schema
-        json_["type"] = self.type
-        json_["metadata"] = self.metadata_
-        json_["example_composition"] = self.example_composition
-        json_["tags"] = self.tags
-        return json_
 
     def get_qr_entries(self) -> List[str]:
         """

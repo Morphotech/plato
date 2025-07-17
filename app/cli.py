@@ -1,4 +1,3 @@
-import json
 from typing import Optional
 
 import typer
@@ -6,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.template import Template
 from app.deps import get_db
+from app.schemas.template_detail import TemplateDetailSchema
 from app.settings import get_settings
 from app.util.setup_util import initialize_file_storage
 
@@ -16,21 +16,6 @@ settings = get_settings()
 def get_session() -> Session:
     return next(get_db())
 
-@app_cli.command()
-def register_new_template(json_file_path: str):
-    """
-    Imports new template from json file and inserts it in database.
-
-    Args:
-        json_file_path (str): Path to the JSON file containing the template definition.
-    """
-    session = get_session()
-    with open(json_file_path, "r") as f:
-        template_entry_json = json.load(f)
-    new_template = Template.from_json_dict(template_entry_json)
-    session.add(new_template)
-    session.commit()
-    typer.echo("Template registered.")
 
 @app_cli.command()
 def export_template(output: str, template_id: Optional[str] = None):
@@ -51,7 +36,8 @@ def export_template(output: str, template_id: Optional[str] = None):
         template_id = typer.prompt("Please enter the id for the template you wish to export")
     template = session.query(Template).filter_by(id=template_id).one()
     with open(output, "w") as f:
-        json.dump(template.json_dict(), f)
+        template_schema = TemplateDetailSchema.model_validate(template)
+        f.write(template_schema.model_dump_json())
     typer.echo(f"Template {template_id} exported to {output}.")
 
 @app_cli.command()

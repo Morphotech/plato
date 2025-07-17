@@ -69,7 +69,7 @@ class TestGetTemplates:
             assert response.status_code == HTTPStatus.OK
             assert len(response.json()) == 1
             template_json = response.json()[0]
-            assert current_tag == template_json["tags"][0]
+            assert current_tag in template_json["tags"]
 
     def test_obtain_template_by_tags_empty(self, fastapi_client_local_storage: TestClient):
         template_id = 67
