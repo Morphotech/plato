@@ -116,6 +116,7 @@ class PlatoFileStorage(ABC):
         Args:
             target_directory: Target directory to store the templates in
             template_directory: Base directory
+            db (Session): The database session to query templates from
         """
         pass
 
@@ -198,7 +199,7 @@ class S3FileStorage(PlatoFileStorage):
 
         self.write_files(files=static_files, target_directory=target_directory)
 
-        templates = db.query(Template).all() # todo use template
+        templates = db.query(Template).all()
         for template in templates:
             # get template content
             template_files = self.get_file(path=template_path(template_directory_name, template.id),

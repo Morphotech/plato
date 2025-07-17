@@ -155,7 +155,7 @@ class Renderer(ABC):
             return type_
         return wrapper
 
-    def qr_render(self, output_folder: str, compose_data: dict):
+    def qr_render(self, output_folder: str, compose_data: dict) -> dict:
         """
         Render QR codes, altering self.compose_data to replace qr_code properties with the filepath to their renders
 
