@@ -5,7 +5,12 @@ meta {
 }
 
 get {
-  url: {{HOST}}/templates
+  url: {{HOST}}/templates?tags=example
   body: none
   auth: inherit
+}
+
+params:query {
+  tags: example
+  ~tags: example2
 }
