@@ -182,12 +182,11 @@ VALUES('student-diploma', '{"type": "object", "required": ["recipient_name", "ce
   Commands:
     export-template        Export new template to file Args: output: output...
     refresh                
-    register-new-template  Imports new template from json file and inserts it...
 ```
 
-* Use the Plato CLI. You have to enter the container with the *run* command, and then execute the *register-new-template* command, according to instructions to the right.
+* Use the Plato CLI. You have to enter the container with the *run* command, and then execute the *export-template* command, according to instructions to the right.
    You can also run `docker compose exec -T api poetry run python /app/cli.py --help` for information on the available commands.
-   The input JSON file that the *register-new-template* command requires has the JSON structure found on the right side of the page. Note that the title corresponds directly to the
+   The input JSON file that the *export-template* command requires has the JSON structure found on the right side of the page. Note that the title corresponds directly to the
    template ID.
 
 <aside class="warning">
