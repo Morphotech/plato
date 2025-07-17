@@ -1,6 +1,3 @@
-volumes:
-  pg_data:
-
 services:
   database:
     image: postgres:17.5
@@ -19,9 +16,11 @@ services:
 
   test-plato:
     image: plato-api
+    command: poetry run pytest && poetry run coverage xml -i -o coverage/coverage.xml"
     environment:
       DATA_DIR: /plato-data/
       TEMPLATE_DIRECTORY: /plato-data/templates/
+      TEMPLATE_DIRECTORY_NAME: templating
       DB_HOST: localhost
       DB_PORT: 5456
       DB_USERNAME: test
@@ -29,8 +28,9 @@ services:
       DB_DATABASE: test
       S3_BUCKET: test_template_bucket
       STORAGE_TYPE: s3
+      POSTGRES_VER: 17.5
     volumes:
-      - ${API_DIRECTORY}/coverage:/app/coverage
+      - ../coverage:/app/coverage
     networks:
       - plato_test
 
@@ -38,7 +38,10 @@ services:
     image: plato-api
     command: bash -c "poetry run cyclonedx-py -e -o /app/bom/bom.xml"
     volumes:
-      - ${API_DIRECTORY}/bom:/app/bom
+      - ../bom:/app/bom
 
 networks:
   plato_test:
+
+volumes:
+  pg_data:
