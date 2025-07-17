@@ -61,7 +61,7 @@ class TemplateInfo(NamedTuple):
     template_schema: dict
     type: str
     metadata: dict
-    tags: List[str]
+    tags: Set[str]
 ```
 
 Retrieves all templates available on the database. Has a single query parameter, "tags", that can be used multiple times
