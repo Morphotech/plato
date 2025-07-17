@@ -98,7 +98,8 @@ poetry run fastapi dev
 ```
 
 This will make the application available at http://localhost:8000/docs/
-where you can use swagger-ui to interact with the application.
+where you can use Swagger UI to interact with the application. 
+You can also check the Bruno Collection supplied in the repository to test the API endpoints.
 
 _Note_: If you run the app through a server instead of main, make sure you run `python app/cli.py refresh`
 so it can obtain the most recent templates from S3.
@@ -116,7 +117,10 @@ Running tests inside the docker containers (you might need to build the plato do
 ```bash
 docker-compose -f tests/docker/docker-compose.build.test.yml up -d database
 
-docker-compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato pytest --cov=micro_templating
+docker compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato
+
+docker-compose -f tests/docker/docker-compose.build.test.yml down
+
 ```
 
 ## Use Command Line Interface
@@ -124,9 +128,6 @@ docker-compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato
 You can use the CLI to manage templates directly from the command line. To use it, you need run the command `python app/cli.py <command> <args>`.
 
 ```bash
-# Register a new template from a JSON file
-python app/cli.py register-new-template path/to/template.json
-
 # Export a template to a file (will prompt for template id if not provided)
 python app/cli.py export-template output.json --template-id=your_template_id
 
