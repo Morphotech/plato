@@ -37,12 +37,18 @@ Check if weasyprint is working:
 weasyprint --info
 ```
 
-If not:
+If the above command does not work, or if it does work but Plato complains about fontconfig, then run the following command:
 
 ```bash
 sudo mkdir -p /usr/local/lib
 sudo cp $(brew --prefix fontconfig)/lib/libfontconfig.\* /usr/local/lib
 ```
+
+Alternatively, if the above does not work, you can fetch the libfontconfig files directly from the Homebrew Cellar:
+
+```bash
+sudo cp /opt/homebrew/Cellar/fontconfig/<VERSION>/lib/libfontconfig.* /usr/local/lib
+````
 
 ### Installing
 
