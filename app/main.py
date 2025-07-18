@@ -99,17 +99,10 @@ OCTET_STREAM = "application/octet-stream"
 ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
 
 
-def _compose(
-        jinja_env: JinjaEnv,
-        template_static_directory: str,
-        db: Session,
-        template_id: str,
-        file_name: str,
-        compose_retrieval_function: Callable[[Template], dict],
-        width: int | None,
-        height: int | None,
-        page: int | None,
-        accept_header: str | None = PDF_MIME) -> StreamingResponse | JSONResponse:
+def _compose(jinja_env: JinjaEnv, template_static_directory: str, db: Session, template_id: str,
+             file_name: str, compose_retrieval_function: Callable[[Template], dict], width: int | None,
+             height: int | None, page: int | None, accept_header: str | None) -> StreamingResponse | JSONResponse:
+    accept_header = accept_header or PDF_MIME
     mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
 
     try:

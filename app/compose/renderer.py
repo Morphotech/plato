@@ -339,6 +339,7 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
         io.BytesIO: The Byte stream for the composed file.
     """
     validate_schema(instance=compose_data, schema=template.schema)
-    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env, template_static_directory=template_static_directory, *args, **kwargs)
+    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env,
+                                       template_static_directory=template_static_directory, *args, **kwargs)
 
     return renderer.render(compose_data)

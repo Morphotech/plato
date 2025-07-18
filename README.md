@@ -16,7 +16,7 @@ These instructions will get the project up and running on your local environment
 - [Docker-compose](https://docs.docker.com/compose/)
 
 The project depends on [weasyprint](https://weasyprint.org/) for writing PDF from HTML so make sure you have everything
-weasy print needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
+weasyprint needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
 
 The instructions are also available below.
 
