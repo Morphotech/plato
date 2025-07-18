@@ -1,20 +1,21 @@
 project_version=''
-local_api_image_name = 'plato-api'
-
-sonar_project_key = 'plato'
-sonar_url = 'https://sonar.morphotech.co.uk'
-sonar_analyzed_dir = 'plato'
 
 pipeline {
     agent {
         label env.agent_label
     }
 
+    environment {
+        registryUrl = 'https://registry.hub.docker.com'
+        registryCredential = 'vizidox'
+    }
+
+
     stages {
-        stage('Build Project') {
+        stage('Build API'){
             steps {
                 script {
-                    sh('docker compose build plato-api')
+                    dockerImage = docker.build("plato-api", "-f Dockerfile --platform linux/amd64,linux/arm64 .")
                 }
             }
         }
@@ -22,8 +23,8 @@ pipeline {
             steps{
                 script{
                     if(!params.get('skipTests', false)) {
-                        sh 'docker compose -f tests/docker/docker-compose.build.test.yml up -d database'
-                        sh 'docker compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato pytest --junitxml=/app/coverage/pytest-report.xml --cov-report=xml:/app/coverage/coverage.xml --cov=${sonar_analyzed_dir}'
+                        sh 'docker compose -f docker-compose.ci.yml up -d database'
+                        sh 'docker compose -f docker-compose.ci.yml run --rm test-plato'
                     }
                 }
             }
@@ -36,40 +37,20 @@ pipeline {
                 sh "echo 'current project version: ${project_version}'"
             }
         }
-        stage('Push to Docker Hub and GitHub') {
+        stage("Push to Docker Hub and GitHub"){
             steps {
-                sh "docker tag ${local_api_image_name} vizidox/plato:${project_version}"
-                sh "docker push vizidox/plato:${project_version}"
-                sh "docker tag vizidox/plato:${project_version} ghcr.io/vizidox/plato:${project_version}"
-                sh "docker push ghcr.io/vizidox/plato:${project_version}"
-                sh "docker tag ghcr.io/vizidox/plato:${project_version} ${local_api_image_name}" // tag the image with the original name for later docker compose cleanup
-            }
-        }
-        stage('Build ARM Project and Push') {
-            steps {
-                sh('docker compose -f docker-compose-arm.yaml build')
-                sh "docker tag plato-api-arm vizidox/plato:${project_version}-arm"
-                sh "docker push vizidox/plato:${project_version}-arm"
-                sh "docker tag vizidox/plato:${project_version}-arm ghcr.io/vizidox/plato:${project_version}-arm"
-                sh "docker push ghcr.io/vizidox/plato:${project_version}-arm"
-            }
-        }
-        stage('Sonarqube code inspection') {
-            steps {
-                sh "docker run --rm -e SONAR_HOST_URL=\"${sonar_url}\" -v \"${WORKSPACE}:/usr/src\"  sonarsource/sonar-scanner-cli:${env.sonarqube_version} -X \
-                -Dsonar.projectKey=${sonar_project_key}\
-                -Dsonar.login=${env.sonar_account}\
-                -Dsonar.password=${env.sonar_password}\
-                -Dsonar.python.coverage.reportPaths=coverage/coverage.xml\
-                -Dsonar.python.xunit.reportPath=coverage/pytest-report.xml\
-                -Dsonar.projectBaseDir=${sonar_analyzed_dir}\
-                -Dsonar.exclusions=\"/static/**/*, /templates/**/*\""
+                script {
+                    docker.withRegistry( registryUrl, registryCredential ) {
+                        dockerImage.push("${project_version}")
+                    }
+                }
             }
         }
     }
     post {
         cleanup{
-            sh 'docker compose -f tests/docker/docker-compose.build.test.yml down -v --rmi all'
+            sh "docker compose -f docker-compose.ci.yml down"
+            sh "docker image prune -af"
         }
     }
 }
