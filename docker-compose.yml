@@ -6,16 +6,11 @@ services:
       dockerfile: ./Dockerfile
     environment:
       DATA_DIR: /plato-data/
-      TEMPLATE_DIRECTORY: /plato-data/templates/
-      TEMPLATE_DIRECTORY_NAME: ${TEMPLATE_DIRECTORY_NAME}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_DATABASE: ${DB_DATABASE}
-      S3_BUCKET: ${S3_BUCKET}
-      STORAGE_TYPE: ${STORAGE_TYPE}
-      POSTGRES_VER: ${POSTGRES_VER}
+      IN_DOCKER: true
+      DB_HOST: database
+      DB_PORT: 5432
+    env_file:
+      - .env
     volumes:
       - ${DATA_DIR}/aws:/root/.aws
     ports:
