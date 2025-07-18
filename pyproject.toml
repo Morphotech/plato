@@ -37,7 +37,7 @@ num2words = "0.5.10"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "~8.4.1"
-pytest-cov = "2.10.1"
+coverage = "~7.4.4"
 moto = { version = "5.1.8", extras = ["s3"] }
 testcontainers = "^4.10.0"
 blinker = "1.4"
