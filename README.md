@@ -1,5 +1,7 @@
 # Plato Microservice
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 A python REST API for document composition through jsonschema.
 
 ## Getting Started
@@ -121,11 +123,11 @@ poetry run pytest
 Running tests inside the docker containers (you might need to build the plato docker image first):
 
 ```bash
-docker-compose -f tests/docker/docker-compose.build.test.yml up -d database
+docker-compose -f tests/docker/docker-compose.ci.yml up -d database
 
-docker compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato
+docker compose -f tests/docker/docker-compose.ci.yml run --rm test-plato
 
-docker-compose -f tests/docker/docker-compose.build.test.yml down
+docker-compose -f tests/docker/docker-compose.ci.yml down
 
 ```
 
