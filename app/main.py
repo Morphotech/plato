@@ -14,6 +14,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session, Query as SqlQuery
 
 from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
+from app.db.session import db_session
 from app.deps import get_db, get_jinja_env, get_template_static_directory
 from app.error_messages import template_not_found, resizing_unsupported, \
     single_page_unsupported, aspect_ratio_compromised, negative_number_invalid, \
@@ -29,6 +30,10 @@ from app.util.setup_util import create_template_environment, initialize_file_sto
 async def lifespan(api: FastAPI):
     settings = get_settings()
     api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+
+    with db_session() as db:
+        api.state.file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)
+
     api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
     api.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
     yield
