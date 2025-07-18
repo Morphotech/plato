@@ -1,6 +1,7 @@
 # Plato Microservice
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
 A python REST API for document composition through jsonschema.
 
@@ -145,6 +146,19 @@ python app/cli.py refresh
 
 To see the available options for each command, you can run `python app/cli.py <command> --help`. To list all commands and get instructions, run `python app/cli.py --help`.
 
+## Publishing a new image version
+
+1. Guarantee the code is working and all tests are passing!
+2. Update the version in `pyproject.toml` file, according to the [Calendar Versioning](https://calver.org/) scheme.
+3. (Skip if done previously) Login to the Docker registry with `docker login`. You need to have access to the Vizidox dockerhub account, which is on Keepass.
+4. Build and push the docker image with the command:
+
+```bash
+docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato' .
+docker push vizidox/plato:<VERSION>
+```
+
+Note: At least on MacOS using Docker Desktop, you may need to activate "containerd for pulling and storing images", in the General settings. Also check if your builder includes both arm64 and amd64 platforms by running `docker buildx ls`.
 
 ## How to use in your project
 

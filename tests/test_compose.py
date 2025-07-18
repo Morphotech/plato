@@ -1,28 +1,26 @@
 import io
-from math import isclose
-from contextlib import asynccontextmanager
-from PIL import Image
 import tempfile
+from contextlib import asynccontextmanager
+from http import HTTPStatus
+from math import isclose
 from pathlib import Path
+
+import pytest
+from PIL import Image
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from jinja2 import DictLoader, select_autoescape
+from jinja2 import Environment as JinjaEnv
 from pypdf import PdfReader
+from sqlalchemy.orm import Session
 
 from app.deps import get_db
-from app.file_storage import DiskFileStorage
-from fastapi.testclient import TestClient
-import pytest
-from jinja2 import DictLoader, select_autoescape
-from sqlalchemy.orm import Session
-from http import HTTPStatus
-from jinja2 import Environment as JinjaEnv
-from itertools import chain
 from app.error_messages import aspect_ratio_compromised, resizing_unsupported, \
-                            unsupported_mime_type
-
-from app.models.template import Template
+    unsupported_mime_type
+from app.file_storage import DiskFileStorage
 from app.main import ALL_AVAILABLE_MIME_TYPES, app
+from app.models.template import Template
 from tests import get_message
-
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
