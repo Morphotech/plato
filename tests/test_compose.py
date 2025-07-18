@@ -5,6 +5,7 @@ from PIL import Image
 import tempfile
 from pathlib import Path
 from fastapi import FastAPI
+from pypdf import PdfReader
 
 from app.deps import get_db
 from app.file_storage import DiskFileStorage
@@ -13,7 +14,6 @@ import pytest
 from jinja2 import DictLoader, select_autoescape
 from sqlalchemy.orm import Session
 from http import HTTPStatus
-from fitz import Document
 from jinja2 import Environment as JinjaEnv
 from itertools import chain
 from app.error_messages import aspect_ratio_compromised, resizing_unsupported, \
@@ -141,8 +141,8 @@ class TestCompose:
         response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID), json=json_request)
         assert response.status_code == HTTPStatus.OK
         assert response.content is not None
-        pdf_document = Document(filetype="bytes", stream=response.content)
-        real_text = "".join((page.get_text() for page in pdf_document))
+        pdf_reader = PdfReader(io.BytesIO(response.content))
+        real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
 
 
@@ -151,9 +151,12 @@ class TestCompose:
             response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(template_id), json={})
             assert response.content is not None
             assert response.status_code == HTTPStatus.OK
-            pdf_document = Document(filetype="bytes", stream=response.content)
-            blocks = chain.from_iterable((page.get_text("dict")["blocks"] for page in pdf_document))
-            return [block["image"] for block in blocks]
+            pdf_reader = PdfReader(io.BytesIO(response.content))
+            images_ = []
+            for page in pdf_reader.pages:
+                for image in page.images:
+                    images_.append(image)
+            return images_
 
         images = get_images_from_template(PNG_IMAGE_TEMPLATE_ID)
         assert len(images) == 1
@@ -168,8 +171,8 @@ class TestCompose:
         response = client_with_jinjaenv.get(self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID))
         assert response.status_code == HTTPStatus.OK
         assert response.content is not None
-        pdf_document = Document(filetype="bytes", stream=response.content)
-        real_text = "".join((page.get_text() for page in pdf_document))
+        pdf_reader = PdfReader(io.BytesIO(response.content))
+        real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
 
     def test_resize_ok(self, client_with_jinjaenv):
@@ -249,10 +252,9 @@ class TestCompose:
         assert response.content is not None
         assert response.status_code == HTTPStatus.OK
 
-        pdf_document = Document(filetype="bytes", stream=response.content)
-        blocks = chain.from_iterable((page.get_text("dict")["blocks"] for page in pdf_document))
-        images = [block["image"] for block in blocks]
-        assert len(images) == 1
-
-
-
+        pdf_reader = PdfReader(io.BytesIO(response.content))
+        images_ = []
+        for page in pdf_reader.pages:
+            for image in page.images:
+                images_.append(image)
+        assert len(images_) == 1
