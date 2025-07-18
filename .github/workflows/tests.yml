@@ -2,8 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/*]
+    branches:
+      - master
+      - develop
+      - release/**
+      - hotfix/**
+    paths-ignore:
+      - '**/*.md'
   pull_request:
+      branches:
+        - master
+        - develop
 
 jobs:
   test:
@@ -46,7 +55,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install Poetry
-        run: pip install poetry
+        run: pip install poetry==2.1.2
 
       - name: Install dependencies
         run: poetry install
