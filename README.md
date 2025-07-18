@@ -145,7 +145,7 @@ Please check the detailed instructions on the [official documentation](https://p
 
 ## Built With
 
-- [FastaAPI](https://fastapi.tiangolo.com/) - Web framework
+- [FastAPI](https://fastapi.tiangolo.com/) - Web framework
 - [Poetry](https://python-poetry.org/) - Dependency Management
 - [Jinja2](https://palletsprojects.com/p/jinja/) - For HTML composition
 - [Weasyprint](https://weasyprint.org/) - For PDF generation from HTML
