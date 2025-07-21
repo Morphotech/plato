@@ -14,7 +14,7 @@ services:
     volumes:
       - ${DATA_DIR}/aws:/root/.aws
     ports:
-      - "80:80"
+      - "8000:8000"
 
   database:
     image: postgres:${POSTGRES_VER}
