@@ -124,11 +124,11 @@ poetry run pytest
 Running tests inside the docker containers (you might need to build the plato docker image first):
 
 ```bash
-docker-compose -f tests/docker/docker-compose.ci.yml up -d database
+docker-compose -f docker-compose.ci.yml up -d database
 
-docker compose -f tests/docker/docker-compose.ci.yml run --rm test-plato
+docker compose -f docker-compose.ci.yml run --rm test-plato
 
-docker-compose -f tests/docker/docker-compose.ci.yml down
+docker-compose -f docker-compose.ci.yml down
 
 ```
 
