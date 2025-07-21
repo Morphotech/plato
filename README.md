@@ -159,7 +159,7 @@ To see the available options for each command, you can run `python app/cli.py <c
 4. Build and push the docker image with the command:
 
     ```bash
-    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato' .
+    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
     docker push vizidox/plato:<VERSION>
     ```
 
