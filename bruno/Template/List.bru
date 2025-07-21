@@ -1,0 +1,16 @@
+meta {
+  name: List
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{HOST}}/templates?tags=example
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tags: example
+  ~tags: example2
+}

@@ -1,0 +1,44 @@
+services:
+  database:
+    image: postgres:17.5
+    restart: unless-stopped
+    volumes:
+      - pg_data:/data/db
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+      PGDATA: /data/db/
+    ports:
+      - 127.0.0.1:5456:5432
+    networks:
+      - plato_test
+
+  test-plato:
+    image: plato-api
+    command: poetry run coverage run -m pytest && poetry run coverage xml -i -o coverage/coverage.xml
+    environment:
+      DATA_DIR: /plato-data/
+      IN_DOCKER: true
+      TEMPLATE_DIRECTORY: /plato-data/templates/
+      TEMPLATE_DIRECTORY_NAME: templating
+      S3_BUCKET: test_template_bucket
+      STORAGE_TYPE: s3
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_USERNAME: test
+      DB_PASSWORD: test
+      DB_DATABASE: test
+      POSTGRES_VER: 17.5
+    volumes:
+      - ../coverage:/plato/coverage
+    depends_on:
+      - database
+    networks:
+      - plato_test
+
+networks:
+  plato_test:
+
+volumes:
+  pg_data:

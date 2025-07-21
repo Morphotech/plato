@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - release/**
+      - hotfix/**
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+      branches:
+        - master
+        - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17.5
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5456:5432
+        options: >-
+          --health-cmd="pg_isready" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+
+    env:
+      DATA_DIR: /plato-data/
+      TEMPLATE_DIRECTORY: /plato-data/templates/
+      TEMPLATE_DIRECTORY_NAME: templating
+      DB_HOST: localhost
+      DB_PORT: 5456
+      DB_USERNAME: test
+      DB_PASSWORD: test
+      DB_DATABASE: test
+      S3_BUCKET: test_template_bucket
+      STORAGE_TYPE: s3
+      POSTGRES_VER: 17.5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        run: pip install poetry==2.1.2
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run tests
+        run: poetry run coverage run -m pytest && poetry run coverage xml -i -o coverage.xml
+
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          project-token: ${{ secrets.CODACY_KEY }}
+          coverage-reports: coverage.xml  # Path to the coverage report file

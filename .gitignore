@@ -22,6 +22,7 @@ conf/mypy.ini
 coverage
 coverage.xml
 htmlcov/
+.coverage
 
 # mypy
 .mypy_cache/

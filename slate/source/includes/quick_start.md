@@ -44,18 +44,19 @@ plato:
     DATA_DIR: /plato-data/
     TEMPLATE_DIRECTORY: /plato-data/templating/
     DB_HOST: plato-database
-    DB_PORT: 5432
+    DB_PORT: <PORT>
     DB_USERNAME: <USER>
     DB_PASSWORD: <PASSWORD>
     DB_DATABASE: <DB>
     S3_BUCKET: <PLATO_BUCKET>
-    S3_TEMPLATE_DIR: <PLATO_BASE_DIRECTORY>
+    STORAGE_TYPE: <STORAGE_TYPE>
+    POSTGRES_VER: <{POSTGRES_VER>
   depends_on:
     - plato-database
   volumes:
     - <AWS_CREDENTIALS>:/root/.aws
   ports:
-    - 3000:80
+    - 8000:8000
 
 plato-database:
   image: postgres:<VERSION>
@@ -67,7 +68,7 @@ plato-database:
     POSTGRES_DB: <DB>
     PGDATA: /data/db/
   ports:
-    - 5432:5432
+    - 5455:5432
 ```
 
 <aside class="notice">
@@ -76,22 +77,24 @@ plato-database:
 
 Plato requires a Postgres database to work with; we recommend configuring it via Docker, but you can also use any external
 database already available on your project. Plato is currently developed with Postgres version 9.6.3, and has been successfully 
-used with Postgres up to version 12.11. The database contains a single table called *Template* where all templates are stored. 
+used with Postgres up to version 17.5. The database contains a single table called *Template* where all templates are stored. 
 The *Alembic* table can be ignored, since it is used for migrations.
 
 You can directly copy the accompanying docker-compose configuration to your project, but make sure to fill in the missing variables:
 
 * S3_BUCKET: The name of the bucket on S3 to be used
-* S3_TEMPLATE_DIR: The base directory for Plato templates on the S3 bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
+* TEMPLATE_DIRECTORY_NAME: The base directory for Plato templates on the S3 bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
   value would be "plato".
+* STORAGE_TYPE: The storage type to be used by Plato. Currently, only "s3" or "disk" are supported.
+* POSTGRES_VER: The Postgres version to be used by Plato. 
 * Database credentials (USER, PASSWORD, DB)
 
 You should not change the values for the DATA_DIR and TEMPLATE_DIRECTORY variables. All others can be changed and adapted
 to fit accordingly to your project's configuration. Also note that a volume for AWS credentials is created, so you have
 to indicate where the credentials are in the running environment.
 
-You can now run both docker containers and the Plato API swagger will be available on http://localhost:3000/apidocs. 
-3000 is the default port defined on the docker-compose file, but it can be changed for anything else.
+You can now run both docker containers and the Plato API swagger will be available on http://localhost/docs. 
+8000 is the default port defined on the docker-compose file, but it can be changed for anything else.
 
 ### Add Templates to Plato
 
@@ -174,21 +177,16 @@ VALUES('student-diploma', '{"type": "object", "required": ["recipient_name", "ce
   An example insertion query can be found on the right side of this page.
 
 ```shell
-  docker-compose run --rm plato flask <command>
+  docker compose exec -T api poetry run python /app/cli.py <command> <args>
   
   Commands:
-    db                     Perform database migrations.
-    export_template        Export new template to file Args: output: output...
+    export-template        Export new template to file Args: output: output...
     refresh                
-    register_new_template  Imports new template from json file and inserts it...
-    routes                 Show the routes for the app.
-    run                    Run a development server.
-    shell                  Run a shell in the app context.
 ```
 
-* Use the Plato CLI. You have to enter the container with the *run* command, and then execute the *register_new_template* command, according to instructions to the right.
-   You can also run `docker-compose run --rm plato flask --help` for information on the available commands.
-   The input JSON file that the *register_new_template* command requires has the JSON structure found on the right side of the page. Note that the title corresponds directly to the
+* Use the Plato CLI. You have to enter the container with the *run* command, and then execute the *export-template* command, according to instructions to the right.
+   You can also run `docker compose exec -T api poetry run python /app/cli.py --help` for information on the available commands.
+   The input JSON file that the *export-template* command requires has the JSON structure found on the right side of the page. Note that the title corresponds directly to the
    template ID.
 
 <aside class="warning">

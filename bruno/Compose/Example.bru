@@ -1,0 +1,27 @@
+meta {
+  name: Example
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{HOST}}/template/:templateName/example
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~page: 
+  ~height: 
+  ~width: 
+}
+
+params:path {
+  templateName: hello_template
+}
+
+headers {
+  ~Accept: application/pdf
+  ~Accept: text/html
+  ~Accept: image/png
+}
