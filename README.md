@@ -148,17 +148,22 @@ To see the available options for each command, you can run `python app/cli.py <c
 
 ## Publishing a new image version
 
-1. Guarantee the code is working and all tests are passing!
+1. Guarantee the code is working and all tests are passing (especially in docker! If any test fails, fix it before proceeding):
+    ```bash
+    docker compose build plato-api
+    docker compose -f docker-compose.ci.yml run --rm test-plato
+    ```
+   
 2. Update the version in `pyproject.toml` file, according to the [Calendar Versioning](https://calver.org/) scheme.
 3. (Skip if done previously) Login to the Docker registry with `docker login`. You need to have access to the Vizidox dockerhub account, which is on Keepass.
 4. Build and push the docker image with the command:
 
-```bash
-docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato' .
-docker push vizidox/plato:<VERSION>
-```
+    ```bash
+    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato' .
+    docker push vizidox/plato:<VERSION>
+    ```
 
-Note: At least on MacOS using Docker Desktop, you may need to activate "containerd for pulling and storing images", in the General settings. Also check if your builder includes both arm64 and amd64 platforms by running `docker buildx ls`.
+    Note: At least on MacOS using Docker Desktop, you may need to activate "containerd for pulling and storing images", in the General settings. Also check if your builder includes both arm64 and amd64 platforms by running `docker buildx ls`.
 
 ## How to use in your project
 
