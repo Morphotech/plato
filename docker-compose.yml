@@ -5,7 +5,8 @@ services:
       context: .
       dockerfile: ./Dockerfile
     environment:
-      DATA_DIR: /plato-data/
+      DATA_DIR: /plato-data
+      TEMPLATE_DIRECTORY: /plato-data/templates
       IN_DOCKER: true
       DB_HOST: database
       DB_PORT: 5432
@@ -13,6 +14,7 @@ services:
       - .env
     volumes:
       - ${DATA_DIR}/aws:/root/.aws
+      - ${TEMPLATE_DIRECTORY}:/plato-data/templates
     ports:
       - "8000:8000"
 
