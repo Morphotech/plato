@@ -317,7 +317,7 @@ class HTMLRenderer(Renderer):
         return io.BytesIO(bytes(html_string, encoding="utf-8"))
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory:str,
+def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory: str,
             *args, **kwargs) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
@@ -339,6 +339,7 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
         io.BytesIO: The Byte stream for the composed file.
     """
     validate_schema(instance=compose_data, schema=template.schema)
-    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env, template_static_directory=template_static_directory, *args, **kwargs)
+    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env,
+                                       template_static_directory=template_static_directory, *args, **kwargs)
 
     return renderer.render(compose_data)

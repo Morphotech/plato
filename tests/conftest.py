@@ -22,16 +22,16 @@ settings.S3_BUCKET = 'test_template_bucket'
 @pytest.fixture(scope="session")
 def db():
     if settings.IN_DOCKER:
-        yield from override_get_db(settings.SQLALCHEMY_DATABASE_URI)
+        yield from _setup_test_db(settings.SQLALCHEMY_DATABASE_URI)
     else:
         context_manager = PostgresContainer(image=f"postgres:{settings.POSTGRES_VER}")
         with context_manager:
-            yield from override_get_db(context_manager.get_connection_url())
+            yield from _setup_test_db(context_manager.get_connection_url())
 
 
-def override_get_db(database_uri):
-    test_engine = create_engine(database_uri, future=True)
-    TestingSessionLocal = sessionmaker(bind=test_engine)
+def _setup_test_db(database_uri):
+    test_engine = create_engine(database_uri, pool_pre_ping=True)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     try:
         db = TestingSessionLocal()
         Base.metadata.create_all(bind=test_engine)

@@ -1,5 +1,8 @@
 # Plato Microservice
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+
 A python REST API for document composition through jsonschema.
 
 ## Getting Started
@@ -14,7 +17,7 @@ These instructions will get the project up and running on your local environment
 - [Docker-compose](https://docs.docker.com/compose/)
 
 The project depends on [weasyprint](https://weasyprint.org/) for writing PDF from HTML so make sure you have everything
-weasy print needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
+weasyprint needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
 
 The instructions are also available below.
 
@@ -37,12 +40,18 @@ Check if weasyprint is working:
 weasyprint --info
 ```
 
-If not:
+If the above command does not work, or if it does work but Plato complains about fontconfig, then run the following command:
 
 ```bash
 sudo mkdir -p /usr/local/lib
 sudo cp $(brew --prefix fontconfig)/lib/libfontconfig.\* /usr/local/lib
 ```
+
+Alternatively, if the above does not work, you can fetch the libfontconfig files directly from the Homebrew Cellar:
+
+```bash
+sudo cp /opt/homebrew/Cellar/fontconfig/<VERSION>/lib/libfontconfig.* /usr/local/lib
+````
 
 ### Installing
 
@@ -115,11 +124,11 @@ poetry run pytest
 Running tests inside the docker containers (you might need to build the plato docker image first):
 
 ```bash
-docker-compose -f tests/docker/docker-compose.build.test.yml up -d database
+docker-compose -f docker-compose.ci.yml up -d database
 
-docker compose -f tests/docker/docker-compose.build.test.yml run --rm test-plato
+docker compose -f docker-compose.ci.yml run --rm test-plato
 
-docker-compose -f tests/docker/docker-compose.build.test.yml down
+docker-compose -f docker-compose.ci.yml down
 
 ```
 
@@ -137,6 +146,24 @@ python app/cli.py refresh
 
 To see the available options for each command, you can run `python app/cli.py <command> --help`. To list all commands and get instructions, run `python app/cli.py --help`.
 
+## Publishing a new image version
+
+1. Guarantee the code is working and all tests are passing (especially in docker! If any test fails, fix it before proceeding):
+    ```bash
+    docker compose build plato-api
+    docker compose -f docker-compose.ci.yml run --rm test-plato
+    ```
+   
+2. Update the version in `pyproject.toml` file, according to the [Calendar Versioning](https://calver.org/) scheme.
+3. (Skip if done previously) Login to the Docker registry with `docker login`. You need to have access to the Vizidox dockerhub account, which is on Keepass.
+4. Build and push the docker image with the command:
+
+    ```bash
+    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
+    docker push vizidox/plato:<VERSION>
+    ```
+
+    Note: At least on MacOS using Docker Desktop, you may need to activate "containerd for pulling and storing images", in the General settings. Also check if your builder includes both arm64 and amd64 platforms by running `docker buildx ls`.
 
 ## How to use in your project
 
@@ -145,7 +172,7 @@ Please check the detailed instructions on the [official documentation](https://p
 
 ## Built With
 
-- [FastaAPI](https://fastapi.tiangolo.com/) - Web framework
+- [FastAPI](https://fastapi.tiangolo.com/) - Web framework
 - [Poetry](https://python-poetry.org/) - Dependency Management
 - [Jinja2](https://palletsprojects.com/p/jinja/) - For HTML composition
 - [Weasyprint](https://weasyprint.org/) - For PDF generation from HTML

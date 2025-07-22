@@ -56,7 +56,7 @@ plato:
   volumes:
     - <AWS_CREDENTIALS>:/root/.aws
   ports:
-    - 80:80
+    - 8000:8000
 
 plato-database:
   image: postgres:<VERSION>
@@ -94,7 +94,7 @@ to fit accordingly to your project's configuration. Also note that a volume for 
 to indicate where the credentials are in the running environment.
 
 You can now run both docker containers and the Plato API swagger will be available on http://localhost/docs. 
-80 is the default port defined on the docker-compose file, but it can be changed for anything else.
+8000 is the default port defined on the docker-compose file, but it can be changed for anything else.
 
 ### Add Templates to Plato
 

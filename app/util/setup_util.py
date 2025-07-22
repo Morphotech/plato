@@ -1,6 +1,5 @@
-import os
-
 from jinja2 import Environment as JinjaEnv, FileSystemLoader, select_autoescape
+
 from app.compose import FILTERS
 from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType
 
@@ -60,13 +59,3 @@ def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str | N
     else:
         raise InvalidFileStorageTypeException(storage_type)
     return file_storage
-
-
-def inside_container():
-    """
-    Returns true if we are running inside a container.
-    Copied from testcontainers library as testcontainers are a dev dependency.
-
-    https://github.com/docker/docker/blob/a9fa38b1edf30b23cae3eade0be48b3d4b1de14b/daemon/initlayer/setup_unix.go#L25
-    """
-    return os.path.exists('/.dockerenv')
