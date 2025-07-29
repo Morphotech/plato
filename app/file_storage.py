@@ -4,7 +4,7 @@ from abc import ABC
 from enum import Enum
 from typing import Dict, Any
 
-from smart_open import s3, gcs
+from smart_open import s3
 from google.cloud.storage import Client
 from sqlalchemy.orm import Session
 
@@ -141,7 +141,7 @@ class GCSFileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
         super().__init__(data_directory)
         self.bucket_name = bucket_name
-        self.gcs_client = Client.from_service_account_json(get_settings().CREDENTIALS_DIR)
+        self.gcs_client = Client.from_service_account_json(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
@@ -156,13 +156,11 @@ class GCSFileStorage(PlatoFileStorage):
          A dictionary with key as file's relative location on gcs-bucket and value as file's content
         """
         key_content_mapping: dict = {}
-        for key, content in gcs.open(bucket_id=self.bucket_name, blob_id=path, client=self.gcs_client, mode='rb'):
-            if key[-1] == '/' or not content:
-                # Is a directory
-                continue
+        blobs = list(self.gcs_client.bucket(self.bucket_name).list_blobs(prefix=path))
+        for blob in blobs:
             # based on https://www.python.org/dev/peps/pep-0616/
-            new_key = key[len(template_directory):]
-            key_content_mapping[new_key] = content
+            new_key = blob.name[len(template_directory):]
+            key_content_mapping[new_key] = blob.download_as_bytes()
         return key_content_mapping
 
 
