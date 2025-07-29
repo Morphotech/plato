@@ -35,6 +35,7 @@ jobs:
 
     env:
       DATA_DIR: /plato-data/
+      CREDENTIALS_DIR: /credentials
       TEMPLATE_DIRECTORY: /plato-data/templates/
       TEMPLATE_DIRECTORY_NAME: templating
       DB_HOST: localhost
@@ -42,7 +43,7 @@ jobs:
       DB_USERNAME: test
       DB_PASSWORD: test
       DB_DATABASE: test
-      S3_BUCKET: test_template_bucket
+      BUCKET_NAME: test_template_bucket
       STORAGE_TYPE: s3
       POSTGRES_VER: 17.5
 

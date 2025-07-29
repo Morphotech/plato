@@ -45,7 +45,7 @@ def refresh():
     """
     Refresh local templates by loading the templates from file storage.
     """
-    file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+    file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
     with get_session() as db_session:
         file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db_session)
     typer.echo("Templates refreshed.")

@@ -20,8 +20,9 @@ class Settings(BaseSettings):
     TEMPLATE_DIRECTORY: str
     TEMPLATE_DIRECTORY_NAME: str
     DATA_DIR: str
+    CREDENTIALS_DIR: str
 
-    S3_BUCKET: str | None
+    BUCKET_NAME: str | None
 
     IN_DOCKER: bool = False
 
