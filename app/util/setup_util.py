@@ -1,7 +1,7 @@
 from jinja2 import Environment as JinjaEnv, FileSystemLoader, select_autoescape
 
 from app.compose import FILTERS
-from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType
+from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType, GCSFileStorage
 
 
 class InvalidFileStorageTypeException(Exception):
@@ -35,14 +35,14 @@ def create_template_environment(template_directory_path: str) -> JinjaEnv:
     return env
 
 
-def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str | None) -> PlatoFileStorage:
+def initialize_file_storage(storage_type: str, data_dir: str, bucket_name: str | None) -> PlatoFileStorage:
     """
     Initializes a correct instance of the Plato File Storage, depending on the env values.
 
     Args:
         storage_type (str): The type of file storage to be used, either 'disk' or 's3'.
         data_dir (str): The data directory for the file storage.
-        s3_bucket (str): The S3 bucket name for the file storage.
+        bucket_name (str): The bucket name for the file storage.
 
     Raises:
         InvalidFileStorageTypeException: If the given file storage type doesn't exist.
@@ -55,7 +55,9 @@ def initialize_file_storage(storage_type: str, data_dir: str, s3_bucket: str | N
     if storage_type == StorageType.DISK:
         file_storage = DiskFileStorage(data_dir)
     elif storage_type == StorageType.S3:
-        file_storage = S3FileStorage(data_dir, s3_bucket)
+        file_storage = S3FileStorage(data_dir, bucket_name)
+    elif storage_type == StorageType.GCS:
+        file_storage = GCSFileStorage(data_dir, bucket_name)
     else:
         raise InvalidFileStorageTypeException(storage_type)
     return file_storage
