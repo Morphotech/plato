@@ -6,7 +6,8 @@ authors = [
   "Tiago Santos",
   "Joana Teixeira <joana.teixeira@morphotech.com>",
   "Rita Mariquitos <rita.mariquitos@morphotech.com>",
-  "Fábio André Damas <fabio.damas@morphotech.com>"
+  "Fábio André Damas <fabio.damas@morphotech.com>",
+  "Pedro Alves <pedro.alves@morphotech.com>"
 ]
 packages = [{ include = "app" }]
 
@@ -20,8 +21,8 @@ psycopg2-binary = "^2.9.10"
 alembic = "^1.16.2"
 jsonschema = "^4.24.0"
 
-# S3
-smart-open = { version = "6.3.0", extras = ["aws"] }
+# S3 and GCS
+smart-open = { version = "6.4.0", extras = ["aws", "gcs"] }
 
 # Database
 sqlalchemy = { version = "^2.0", extras = ["postgresql_psycopg2binary"] }
