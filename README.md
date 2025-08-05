@@ -78,8 +78,9 @@ e.g TEMPLATE_DIRECTORY_NAME=projects/templating
 
 Make sure the bucket is accessible by providing credentials to the service by
 storing the S3 AWS credentials in your DATA_DIR/aws/. Also, ensure that you have a credentials folder inside DATA_DIR.
-This will permit you to use the GCS service, as an alternative to S3 AWS, 
-should you provide a JSON file inside the folder with the GCS credentials.
+This will permit you to use the GCS service, as an alternative to S3 AWS, should you provide a JSON file inside 
+the folder with the GCS credentials. This JSON file has to have a specific name so that plato can recognize it: 
+*service_account_key.json*
 
 #### Database
 

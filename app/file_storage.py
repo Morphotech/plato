@@ -68,10 +68,10 @@ class PlatoFileStorage(ABC):
 
         Args:
             path (str): the url leading to the file/folder
-            template_directory (str): the s3-bucket path for the templates directory
+            template_directory (str): the path for the templates directory
 
         Returns:
-         A dictionary with key as file's relative location on s3-bucket and value as file's content
+         A dictionary with key as file's relative location and value as file's content
         """
         pass
 
@@ -84,6 +84,8 @@ class PlatoFileStorage(ABC):
             template_directory_name: Base directory
             db (Session): The database session to query templates from
         """
+        if type(self) == DiskFileStorage: return
+
         old_templates_path = pathlib.Path(target_directory)
         if old_templates_path.exists():
             shutil.rmtree(old_templates_path)
