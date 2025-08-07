@@ -19,10 +19,11 @@ services:
     command: poetry run coverage run -m pytest && poetry run coverage xml -i -o coverage/coverage.xml
     environment:
       DATA_DIR: /plato-data/
+      CREDENTIALS_DIR: /credentials
       IN_DOCKER: true
       TEMPLATE_DIRECTORY: /plato-data/templates/
       TEMPLATE_DIRECTORY_NAME: templating
-      S3_BUCKET: test_template_bucket
+      BUCKET_NAME: test_template_bucket
       STORAGE_TYPE: s3
       DB_HOST: database
       DB_PORT: 5432

@@ -29,7 +29,7 @@ from app.util.setup_util import create_template_environment, initialize_file_sto
 @asynccontextmanager
 async def lifespan(api: FastAPI):
     settings = get_settings()
-    api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.S3_BUCKET)
+    api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
 
     with db_session() as db:
         api.state.file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)

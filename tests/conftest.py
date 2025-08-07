@@ -11,12 +11,12 @@ from testcontainers.postgres import PostgresContainer
 
 from app.db.base_class import Base
 from app.deps import get_db
-from app.file_storage import DiskFileStorage, S3FileStorage
+from app.file_storage import DiskFileStorage, S3FileStorage, GCSFileStorage
 from app.main import app
 from app.settings import get_settings
 
 settings = get_settings()
-settings.S3_BUCKET = 'test_template_bucket'
+settings.BUCKET_NAME = 'test_template_bucket'
 
 
 @pytest.fixture(scope="session")
@@ -47,7 +47,29 @@ def fastapi_client_s3_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
         with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = S3FileStorage(file_dir, settings.S3_BUCKET)
+            app.state.file_storage = S3FileStorage(file_dir, settings.BUCKET_NAME)
+            app.state.jinja_env = JinjaEnv(
+                loader=DictLoader({}),
+                autoescape=select_autoescape(["html", "xml"]),
+                auto_reload=True
+            )
+            current_folder = Path(__file__).resolve().parent
+            app.state.template_static_directory = str(current_folder / "resources/static")
+            yield
+
+    app.dependency_overrides[get_db] = lambda: db
+    app.router.lifespan_context = mock_lifespan
+
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture(scope='class')
+def fastapi_client_gcs_storage(db):
+    @asynccontextmanager
+    async def mock_lifespan(app):
+        with tempfile.TemporaryDirectory() as file_dir:
+            app.state.file_storage = GCSFileStorage(file_dir, settings.BUCKET_NAME)
             app.state.jinja_env = JinjaEnv(
                 loader=DictLoader({}),
                 autoescape=select_autoescape(["html", "xml"]),

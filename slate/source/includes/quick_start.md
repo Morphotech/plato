@@ -5,18 +5,19 @@ Docker Hub, and this guide will show you how to integrate Plato with your existi
 
 ## Requirements
 
-* S3 bucket and respective AWS credentials.
+* S3 bucket and respective AWS credentials or GCS bucket and respective credentials.
 * Docker compose file.
 * At least one template. Read on how to create one [here](#create-template).
 
 ## Steps
 
-### Configure S3 Bucket
+### Configure S3/GCS Bucket
 
 You will need to create an S3 Bucket if your project doesn't already have one, and fetch its credentials. Plato 
 will need the AWS credentials so it can access the S3 Bucket and load the templates and static content to the machine.
 The AWS credentials need to be passed into the Plato container as a volume - an example docker-compose file is available 
-later in this [tutorial](#docker-configuration).
+later in this [tutorial](#docker-configuration). Alternatively, you can use a GCS Bucket for your project. The GCS credentials are also
+passed into the Plato container as a volume.
 
 Also, please take into consideration that the bucket's structure will need to follow a specific set of rules:
 
@@ -42,19 +43,21 @@ plato:
   image: plato-api:<VERSION>
   environment:
     DATA_DIR: /plato-data/
+    CREDENTIALS_DIR: <GCS_CREDENTIALS>
     TEMPLATE_DIRECTORY: /plato-data/templating/
     DB_HOST: plato-database
     DB_PORT: <PORT>
     DB_USERNAME: <USER>
     DB_PASSWORD: <PASSWORD>
     DB_DATABASE: <DB>
-    S3_BUCKET: <PLATO_BUCKET>
+    BUCKET_NAME: <PLATO_BUCKET>
     STORAGE_TYPE: <STORAGE_TYPE>
     POSTGRES_VER: <{POSTGRES_VER>
   depends_on:
     - plato-database
   volumes:
     - <AWS_CREDENTIALS>:/root/.aws
+    - <GCS_CREDENTIALS>:/credentials
   ports:
     - 8000:8000
 
@@ -82,15 +85,16 @@ The *Alembic* table can be ignored, since it is used for migrations.
 
 You can directly copy the accompanying docker-compose configuration to your project, but make sure to fill in the missing variables:
 
-* S3_BUCKET: The name of the bucket on S3 to be used
-* TEMPLATE_DIRECTORY_NAME: The base directory for Plato templates on the S3 bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
+* BUCKET_NAME: The name of the bucket on S3/GCS to be used
+* CREDENTIALS_DIR: The directory in which the json file containing the GCS credentials is located
+* TEMPLATE_DIRECTORY_NAME: The base directory for Plato templates on the S3/GCS bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
   value would be "plato".
-* STORAGE_TYPE: The storage type to be used by Plato. Currently, only "s3" or "disk" are supported.
+* STORAGE_TYPE: The storage type to be used by Plato. Currently, only "s3", "gcs" or "disk" are supported.
 * POSTGRES_VER: The Postgres version to be used by Plato. 
 * Database credentials (USER, PASSWORD, DB)
 
 You should not change the values for the DATA_DIR and TEMPLATE_DIRECTORY variables. All others can be changed and adapted
-to fit accordingly to your project's configuration. Also note that a volume for AWS credentials is created, so you have
+to fit accordingly to your project's configuration. Also note that a volume for AWS and GCS credentials is created, so you have
 to indicate where the credentials are in the running environment.
 
 You can now run both docker containers and the Plato API swagger will be available on http://localhost/docs. 

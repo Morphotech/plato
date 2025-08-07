@@ -77,7 +77,10 @@ the directory where your templates are stored.
 e.g TEMPLATE_DIRECTORY_NAME=projects/templating
 
 Make sure the bucket is accessible by providing credentials to the service by
-storing the S3 AWS credentials in your DATA_DIR/aws/.
+storing the S3 AWS credentials in your DATA_DIR/aws/. Also, ensure that you have a credentials folder inside DATA_DIR.
+This will permit you to use the GCS service, as an alternative to S3 AWS, should you provide a JSON file inside 
+the folder with the GCS credentials. This JSON file has to have a specific name so that plato can recognize it: 
+*service_account_key.json*
 
 #### Database
 
@@ -111,7 +114,7 @@ where you can use Swagger UI to interact with the application.
 You can also check the Bruno Collection supplied in the repository to test the API endpoints.
 
 _Note_: If you run the app through a server instead of main, make sure you run `python app/cli.py refresh`
-so it can obtain the most recent templates from S3.
+so it can obtain the most recent templates from S3/GCS.
 
 ## Running the tests
 
@@ -187,3 +190,4 @@ We use [Calendar Versioning](https://calver.org/).
 - **Rita Mariquitos** - Improvements - rita.mariquitos@morphotech.com
 - **Joana Teixeira** - Improvements - joana.teixeira@morphotech.com
 - **Fábio André Damas** - Upgrade to FastAPI - fabio.damas@morphotech.com
+- **Pedro Alves** - Improvements - pedro.alves@morphotech.com

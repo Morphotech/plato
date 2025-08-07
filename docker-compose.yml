@@ -6,6 +6,7 @@ services:
       dockerfile: ./Dockerfile
     environment:
       DATA_DIR: /plato-data
+      CREDENTIALS_DIR: /credentials
       TEMPLATE_DIRECTORY: /plato-data/templates
       IN_DOCKER: true
       DB_HOST: database
@@ -14,6 +15,7 @@ services:
       - .env
     volumes:
       - ${DATA_DIR}/aws:/root/.aws
+      - ${DATA_DIR}/credentials:/credentials
       - ${TEMPLATE_DIRECTORY}:/plato-data/templates
     ports:
       - "8000:8000"

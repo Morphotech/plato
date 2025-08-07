@@ -1,20 +1,22 @@
 import pathlib
-import pathlib
 import shutil
 from abc import ABC
 from enum import Enum
 from typing import Dict, Any
 
 from smart_open import s3
+from google.cloud.storage import Client
 from sqlalchemy.orm import Session
 
 from app.models.template import Template
+from app.settings import get_settings
 from app.util.path_util import base_static_path, template_path
 
 
 class StorageType(str, Enum):
     S3 = 's3'
     DISK = 'disk'
+    GCS = 'gcs'
 
 
 class FileStorageError(Exception):
@@ -59,14 +61,51 @@ class PlatoFileStorage(ABC):
             with open(path, mode="wb") as file:
                 file.write(content)
 
-    def load_templates(self, target_directory: str, template_directory: str, db: Session) -> None:
+    def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
+        Get files from a storage service and save them in the form of a dict. If a folder is inserted as the url,
+            all files in that folder will be returned
+
         Args:
-            target_directory: Target directory to store the templates in
-            template_directory: Base directory
-            db (Session): The database session to query templates from
+            path (str): the url leading to the file/folder
+            template_directory (str): the path for the templates directory
+
+        Returns:
+         A dictionary with key as file's relative location and value as file's content
         """
         pass
+
+    def load_templates(self, target_directory: str, template_directory_name: str, db: Session) -> None:
+        """
+        Gets templates from the bucket which are associated with ones available in the DB.
+        Expected directory structure is {template_directory_name}/{template_id}
+        Note: This method does nothing if the file storage is disk
+
+        Args:
+            target_directory: Target directory to store the templates in
+            template_directory_name: Base directory
+            db (Session): The database session to query templates from
+        """
+        if type(self) == DiskFileStorage: return
+
+        old_templates_path = pathlib.Path(target_directory)
+        if old_templates_path.exists():
+            shutil.rmtree(old_templates_path)
+
+        # get static files
+        static_files = self.get_file(path=base_static_path(template_directory_name),
+                                     template_directory=template_directory_name)
+
+        self.write_files(files=static_files, target_directory=target_directory)
+
+        templates = db.query(Template).all()
+        for template in templates:
+            # get template content
+            template_files = self.get_file(path=template_path(template_directory_name, template.id),
+                                           template_directory=template_directory_name)
+            if not template_files:
+                raise NoIndexTemplateFound(template.id)
+            self.write_files(files=template_files, target_directory=target_directory)
 
 
 class DiskFileStorage(PlatoFileStorage):
@@ -101,34 +140,31 @@ class S3FileStorage(PlatoFileStorage):
             key_content_mapping[new_key] = content
         return key_content_mapping
 
-    def load_templates(self, target_directory: str, template_directory_name: str, db: Session) -> None:
+
+class GCSFileStorage(PlatoFileStorage):
+    def __init__(self, data_directory: str, bucket_name: str):
+        super().__init__(data_directory)
+        self.bucket_name = bucket_name
+        self.gcs_client = Client.from_service_account_json(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
+
+    def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
-        Gets templates from the AWS S3 bucket which are associated with ones available in the DB.
-        Expected directory structure is {template_directory_name}/{template_id}
+        Get files from GCS and save them in the form of a dict. If a folder is inserted as the url, all files in that folder
+            will be returned
 
         Args:
-            target_directory: Target directory to store the templates in
-            template_directory_name: Base directory name for S3 Bucket
-            db (Session): The database session to query templates from
+            path (str): the url leading to the file/folder
+            template_directory (str): the gcs-bucket path for the templates directory
 
-        Raises:
-            NoIndexTemplateFound: If no index template file is found for a given template id
+        Returns:
+         A dictionary with key as file's relative location on gcs-bucket and value as file's content
         """
-        old_templates_path = pathlib.Path(target_directory)
-        if old_templates_path.exists():
-            shutil.rmtree(old_templates_path)
+        key_content_mapping: dict = {}
+        blobs = list(self.gcs_client.bucket(self.bucket_name).list_blobs(prefix=path))
+        for blob in blobs:
+            # based on https://www.python.org/dev/peps/pep-0616/
+            new_key = blob.name[len(template_directory):]
+            key_content_mapping[new_key] = blob.download_as_bytes()
+        return key_content_mapping
 
-        # get static files
-        static_files = self.get_file(path=base_static_path(template_directory_name),
-                                     template_directory=template_directory_name)
 
-        self.write_files(files=static_files, target_directory=target_directory)
-
-        templates = db.query(Template).all()
-        for template in templates:
-            # get template content
-            template_files = self.get_file(path=template_path(template_directory_name, template.id),
-                                           template_directory=template_directory_name)
-            if not template_files:
-                raise NoIndexTemplateFound(template.id)
-            self.write_files(files=template_files, target_directory=target_directory)
