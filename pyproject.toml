@@ -9,7 +9,7 @@ authors = [
   "Fábio André Damas <fabio.damas@morphotech.com>",
   "Pedro Alves <pedro.alves@morphotech.com>"
 ]
-packages = [{ include = "app" }]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.13"
