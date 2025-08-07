@@ -1,18 +1,17 @@
-FROM nexus.morphotech.co.uk/flask-deploy:3.0.1-python3.7
+FROM python:3.13-slim
 
-RUN apt-get update && apt-get install -y build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+RUN apt update && apt install -y build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+RUN pip install poetry==2.1.2
 
+COPY pyproject.toml /plato/pyproject.toml
+COPY poetry.lock /plato/poetry.lock
 
-COPY ./poetry.lock ./poetry.lock
-COPY ./pyproject.toml ./pyproject.toml
-COPY ./main.py /app/main.py
-ENV FLASK_APP=/app/main.py
-COPY plato /app/plato
-COPY ./migrations /app/migrations
-COPY ./prestart.sh /app/prestart.sh
-COPY ./tests /app/tests
+ENV PYTHONPATH=:/plato
+WORKDIR /plato
 
-RUN poetry install -vvv
+RUN poetry install
 
+COPY ./app /plato/app
+COPY ./tests /plato/tests
 
-
+CMD ["poetry", "run" ,"uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

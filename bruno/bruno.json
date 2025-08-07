@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Plato",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
