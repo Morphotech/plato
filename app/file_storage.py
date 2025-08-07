@@ -88,10 +88,6 @@ class PlatoFileStorage(ABC):
         """
         if type(self) == DiskFileStorage: return
 
-        old_templates_path = pathlib.Path(target_directory)
-        if old_templates_path.exists():
-            shutil.rmtree(old_templates_path)
-
         # get static files
         static_files = self.get_file(path=base_static_path(template_directory_name),
                                      template_directory=template_directory_name)
