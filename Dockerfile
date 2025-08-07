@@ -5,12 +5,14 @@ RUN pip install poetry==2.1.2
 
 COPY pyproject.toml /plato/pyproject.toml
 COPY poetry.lock /plato/poetry.lock
+COPY alembic.ini /plato/alembic.ini
 
 ENV PYTHONPATH=:/plato
 WORKDIR /plato
 
 RUN poetry install
 
+COPY ./migrations /plato/migrations
 COPY ./app /plato/app
 COPY ./tests /plato/tests
 
