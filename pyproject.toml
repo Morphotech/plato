@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "plato"
-version = "2023.5.2"
+version = "2025.8.1"
 description = "Templating as a microservice"
 authors = [
   "Tiago Santos",
