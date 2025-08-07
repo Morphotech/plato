@@ -79,6 +79,8 @@ class PlatoFileStorage(ABC):
         """
         Gets templates from the bucket which are associated with ones available in the DB.
         Expected directory structure is {template_directory_name}/{template_id}
+        Note: This method does nothing if the file storage is disk
+
         Args:
             target_directory: Target directory to store the templates in
             template_directory_name: Base directory
