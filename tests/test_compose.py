@@ -173,6 +173,7 @@ class TestCompose:
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
 
+    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
     def test_resize_ok(self, client_with_jinjaenv):
         error = 1
         expected_resize = 200
@@ -212,6 +213,7 @@ class TestCompose:
         _, real_height = maintains_aspect_ratio(response)
         assert isclose(expected_resize, real_height, abs_tol=error)
 
+    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
     def test_resize_nok(self, client_with_jinjaenv):
         intended_resize = 200
 
