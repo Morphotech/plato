@@ -3,8 +3,6 @@ import pytest
 from sqlalchemy.orm import Session
 from http import HTTPStatus
 from json import loads as json_loads
-from tests import get_message
-from app.error_messages import template_not_found
 
 from app.models.template import Template
 
@@ -58,7 +56,7 @@ class TestGetTemplates:
         assert tentative_template_id > NUMBER_OF_TEMPLATES
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_BY_ID_ENDPOINT.format(tentative_template_id))
         assert response.status_code == HTTPStatus.NOT_FOUND
-        assert get_message(response) == template_not_found.format(tentative_template_id)
+        assert response.json() == {"detail": f"Template '{tentative_template_id}' not found"}
 
 
     def test_obtain_template_by_tags(self, fastapi_client_local_storage: TestClient):

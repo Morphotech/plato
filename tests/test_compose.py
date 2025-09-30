@@ -15,12 +15,9 @@ from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
-from app.error_messages import aspect_ratio_compromised, resizing_unsupported, \
-    unsupported_mime_type
 from app.file_storage import DiskFileStorage
-from app.main import ALL_AVAILABLE_MIME_TYPES, app
+from app.main import app
 from app.models.template import Template
-from tests import get_message
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
@@ -224,7 +221,7 @@ class TestCompose:
         )
 
         assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert get_message(response) == aspect_ratio_compromised
+        assert response.json() == {"detail": "Specifying both width and height compromises the template's aspect ratio"}
 
         pdf_mimetype = "application/pdf"
 
@@ -234,7 +231,7 @@ class TestCompose:
             headers={"accept": pdf_mimetype}
         )
         assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert get_message(response) == resizing_unsupported.format(pdf_mimetype)
+        assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {pdf_mimetype}"}
 
     def test_unsupported_mimetype(self, client_with_jinjaenv):
         jpeg_mimetype = "image/jpeg"
@@ -245,7 +242,7 @@ class TestCompose:
         )
 
         assert response.status_code == HTTPStatus.NOT_ACCEPTABLE
-        assert get_message(response) == unsupported_mime_type.format(jpeg_mimetype, ", ".join(ALL_AVAILABLE_MIME_TYPES))
+        assert response.json() == {"detail": f"The given mime type '{jpeg_mimetype}' is not supported."}
 
     def test_compose_qr_code_exists(self, client_with_jinjaenv):
         response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(QR_CODE_TEMPLATE_ID), json={"qr_code": "qr_url.com"})
