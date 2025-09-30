@@ -1,7 +1,7 @@
 import io
 import tempfile
 from contextlib import asynccontextmanager
-from http import HTTPStatus
+from starlette import status
 from math import isclose
 from pathlib import Path
 
@@ -134,7 +134,7 @@ class TestCompose:
         expected_text = "This is some plain text"
         json_request = {"plain": expected_text}
         response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID), json=json_request)
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
         pdf_reader = PdfReader(io.BytesIO(response.content))
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
@@ -145,7 +145,7 @@ class TestCompose:
         def get_images_from_template(template_id: str):
             response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(template_id), json={})
             assert response.content is not None
-            assert response.status_code == HTTPStatus.OK
+            assert response.status_code == status.HTTP_200_OK
             pdf_reader = PdfReader(io.BytesIO(response.content))
             images_ = []
             for page in pdf_reader.pages:
@@ -164,7 +164,7 @@ class TestCompose:
         expected_text = test_template.example_composition["plain"]
 
         response = client_with_jinjaenv.get(self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID))
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
         pdf_reader = PdfReader(io.BytesIO(response.content))
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
@@ -179,7 +179,7 @@ class TestCompose:
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}",
             headers={"accept": "image/png"}
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
         with Image.open(io.BytesIO(response.content)) as img:
             width, height = img.size
@@ -193,7 +193,7 @@ class TestCompose:
         )
 
         def maintains_aspect_ratio(response):
-            assert response.status_code == HTTPStatus.OK
+            assert response.status_code == status.HTTP_200_OK
             assert response.content is not None
             with Image.open(io.BytesIO(response.content)) as img_:
                 width_, height_ = img_.size
@@ -220,7 +220,7 @@ class TestCompose:
             headers={"accept": "image/png"}
         )
 
-        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {"detail": "Specifying both width and height compromises the template's aspect ratio"}
 
         pdf_mimetype = "application/pdf"
@@ -230,7 +230,7 @@ class TestCompose:
             f"?width={intended_resize}",
             headers={"accept": pdf_mimetype}
         )
-        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {pdf_mimetype}"}
 
     def test_unsupported_mimetype(self, client_with_jinjaenv):
@@ -241,13 +241,13 @@ class TestCompose:
             headers={"accept": jpeg_mimetype}
         )
 
-        assert response.status_code == HTTPStatus.NOT_ACCEPTABLE
+        assert response.status_code == status.HTTP_406_NOT_ACCEPTABLE
         assert response.json() == {"detail": f"The given mime type '{jpeg_mimetype}' is not supported."}
 
     def test_compose_qr_code_exists(self, client_with_jinjaenv):
         response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(QR_CODE_TEMPLATE_ID), json={"qr_code": "qr_url.com"})
         assert response.content is not None
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
 
         pdf_reader = PdfReader(io.BytesIO(response.content))
         images_ = []
