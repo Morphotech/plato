@@ -1,6 +1,5 @@
-from http import HTTPStatus
-
 from fastapi import HTTPException
+from starlette import status
 
 class UnsupportedMIMEType(HTTPException):
     """
@@ -11,7 +10,7 @@ class UnsupportedMIMEType(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.NOT_ACCEPTABLE # substitute for starlette status
+        self.status_code = status.HTTP_406_NOT_ACCEPTABLE
         self.detail = f"The given mime type '{mime_type}' is not supported."
 
 
@@ -24,7 +23,7 @@ class PNGCompositionUnavailable(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.NOT_IMPLEMENTED
+        self.status_code = status.HTTP_501_NOT_IMPLEMENTED
         self.detail = "The PNG composition service is temporarily unavailable"
 
 
@@ -37,7 +36,7 @@ class UnsupportedResizingException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = f"Resizing unsupported on provided mime_type: {mime_type}"
 
 
@@ -50,7 +49,7 @@ class SinglePageUnsupportedException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = f"Single page printing unsupported on provided mime_type: {mime_type}"
 
 
@@ -63,7 +62,7 @@ class AspectRatioCompromisedException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = "Specifying both width and height compromises the template's aspect ratio"
 
 
@@ -76,7 +75,7 @@ class NegativePageNumberException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = f"A negative page number is not allowed: {page}"
 
 
@@ -89,7 +88,7 @@ class TemplateNotFoundException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.NOT_FOUND
+        self.status_code = status.HTTP_404_NOT_FOUND
         self.detail = f"Template '{template_id}' not found"
 
 
@@ -103,7 +102,7 @@ class InvalidPageNumberException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = f"The page number is invalid: {page}"
 
 
@@ -116,5 +115,5 @@ class JSONSchemaVerificationErrorException(HTTPException):
         """
         Constructor Method
         """
-        self.status_code = HTTPStatus.BAD_REQUEST
+        self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = "Specifying both width and height compromises the template's aspect ratio"
