@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "plato"
-version = "2025.8.2"
+version = "2025.10.1"
 description = "Templating as a microservice"
 authors = [
   "Tiago Santos",
@@ -31,7 +31,7 @@ sqlalchemy = { version = "^2.0", extras = ["postgresql_psycopg2binary"] }
 accept-types = "0.4.1"
 
 # Templating
-WeasyPrint = "52"
+WeasyPrint = "66"
 qrcode = { version = "6.1", extras = ["pil"] }
 babel = "^2.9.1"
 num2words = "0.5.10"

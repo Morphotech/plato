@@ -109,6 +109,10 @@ def _compose(jinja_env: JinjaEnv, template_static_directory: str, db: Session, t
         if mime_type is None:
             raise UnsupportedMIMEType(accept_header)
 
+        if mime_type == PNG_MIME:
+            return JSONResponse(content={"message": "PNG composition service is temporarily unavailable"},
+                                status_code=HTTPStatus.NOT_IMPLEMENTED)
+
         if (width is not None or height is not None) and mime_type != PNG_MIME:
             return JSONResponse(content={"message": resizing_unsupported.format(mime_type)},
                                 status_code=HTTPStatus.BAD_REQUEST)
