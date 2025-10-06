@@ -81,7 +81,7 @@ class NegativePageNumberException(HTTPException):
 
 class TemplateNotFoundException(HTTPException):
     """
-    Raised when given page number is negative
+    Raised when the requested template cannot be found
     """
 
     def __init__(self, template_id: str) -> None:
@@ -116,4 +116,4 @@ class JSONSchemaVerificationErrorException(HTTPException):
         Constructor Method
         """
         self.status_code = status.HTTP_400_BAD_REQUEST
-        self.detail = "Specifying both width and height compromises the template's aspect ratio"
+        self.detail = "JSON schema validation failed"
