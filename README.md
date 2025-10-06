@@ -88,7 +88,7 @@ The templating service uses Postgresql.
 To set up local servers you may use the docker-compose file supplied. Then spin up the container by running:
 
 ```bash
-docker-compose up -d database
+docker compose up -d database
 ```
 
 To do the same for the database you may try accessing it through
