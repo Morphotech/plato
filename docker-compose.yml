@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    command: fastapi run app/main.py
     environment:
       DATA_DIR: /plato-data
       CREDENTIALS_DIR: /credentials
