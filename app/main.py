@@ -111,14 +111,6 @@ def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
     if compose_schema.page is not None and mime_type != PNG_MIME:
         raise SinglePageUnsupportedException(mime_type)
 
-    compose_params = {}
-    if compose_schema.width is not None:
-        compose_params["width"] = compose_schema.width
-    if compose_schema.height is not None:
-        compose_params["height"] = compose_schema.height
-    if compose_schema.page is not None:
-        compose_params["page"] = compose_schema.page
-
     template_model: Template | None = db.query(Template).filter_by(id=template_id).one_or_none()
     if template_model is None:
         raise TemplateNotFoundException(template_id)
@@ -126,7 +118,7 @@ def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
     try:
         compose_data = compose_retrieval_function(template_model)
         composed_file = compose(template_model, compose_data, mime_type, jinja_env, template_static_directory,
-                                **compose_params)
+                                **compose_schema.model_dump(exclude_none=True))
         return StreamingResponse(composed_file, media_type=mime_type,
                                  headers={
                                      "Content-Disposition": f"attachment; filename={file_name}{guess_extension(mime_type)}"
