@@ -15,5 +15,3 @@ RUN poetry install
 COPY ./migrations /plato/migrations
 COPY ./app /plato/app
 COPY ./tests /plato/tests
-
-CMD ["poetry", "run" ,"uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
