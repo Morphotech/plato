@@ -23,6 +23,13 @@ from app.schemas.template_detail import TemplateDetailSchema
 from app.settings import get_settings
 from app.util.setup_util import create_template_environment, initialize_file_storage
 
+PDF_MIME = "application/pdf"
+HTML_MIME = "text/html"
+PNG_MIME = "image/png"
+OCTET_STREAM = "application/octet-stream"
+
+ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
+
 
 @asynccontextmanager
 async def lifespan(api: FastAPI):
@@ -49,30 +56,30 @@ app.add_middleware(
 
 
 @app.get("/templates/{template_id}", response_model=TemplateDetailSchema)
-def template_by_id(template_id: str, db: Session = Depends(get_db)) -> TemplateDetailSchema | JSONResponse:
+def template_by_id(template_id: str, db: Session = Depends(get_db)) -> Template:
 
     template = db.query(Template).filter_by(id=template_id).one_or_none()
     if template is None:
         raise TemplateNotFoundException(template_id)
 
-    return TemplateDetailSchema.model_validate(template)
+    return template
 
 
 @app.get("/templates", response_model=List[TemplateDetailSchema])
-def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[TemplateDetailSchema]:
+def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[Template]:
     template_query: SqlQuery = db.query(Template)
 
     if tags:
         template_query = template_query.filter(Template.tags.contains(db_cast(tags, ARRAY(String))))
 
-    return [TemplateDetailSchema.model_validate(template) for template in template_query]
+    return template_query.all()
 
 
 @app.post("/template/{template_id}/compose", response_model=None)
 def compose_file(template_id: str, compose_file_schema: ComposeSchema = Query(...), accept: str | None = Header(None),
                  payload: dict = Body(...), jinja_env: JinjaEnv = Depends(get_jinja_env),
                  template_static_directory: str = Depends(get_template_static_directory),
-                 db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
+                 db: Session = Depends(get_db)) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
                     lambda t: payload, template_id, "compose", compose_file_schema, accept)
 
@@ -81,22 +88,14 @@ def compose_file(template_id: str, compose_file_schema: ComposeSchema = Query(..
 def example_compose(template_id: str, compose_file_schema: ComposeSchema = Query(...), accept: str | None = Header(None),
                     jinja_env: JinjaEnv = Depends(get_jinja_env),
                     template_static_directory: str = Depends(get_template_static_directory),
-                    db: Session = Depends(get_db)) -> StreamingResponse | JSONResponse:
+                    db: Session = Depends(get_db)) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
                     lambda t: t.example_composition, template_id, "example", compose_file_schema, accept)
 
 
-PDF_MIME = "application/pdf"
-HTML_MIME = "text/html"
-PNG_MIME = "image/png"
-OCTET_STREAM = "application/octet-stream"
-
-ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
-
-
 def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
              compose_retrieval_function: Callable[[Template], dict], template_id: str, file_name: str,
-             compose_schema: ComposeBaseSchema, accept_header: str | None) -> StreamingResponse | JSONResponse:
+             compose_schema: ComposeBaseSchema, accept_header: str | None) -> StreamingResponse:
     accept_header = accept_header or PDF_MIME
     mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
 
@@ -111,12 +110,6 @@ def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
 
     if compose_schema.page is not None and mime_type != PNG_MIME:
         raise SinglePageUnsupportedException(mime_type)
-
-    if compose_schema.width is not None and compose_schema.height is not None:
-        raise AspectRatioCompromisedException()
-
-    if compose_schema.page is not None and compose_schema.page < 0:
-        raise NegativePageNumberException(compose_schema.page)
 
     compose_params = {}
     if compose_schema.width is not None:
