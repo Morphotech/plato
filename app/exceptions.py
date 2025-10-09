@@ -66,19 +66,6 @@ class AspectRatioCompromisedException(HTTPException):
         self.detail = "Specifying both width and height compromises the template's aspect ratio"
 
 
-class NegativePageNumberException(HTTPException):
-    """
-    Raised when given page number is negative
-    """
-
-    def __init__(self, page: int) -> None:
-        """
-        Constructor Method
-        """
-        self.status_code = status.HTTP_400_BAD_REQUEST
-        self.detail = f"A negative page number is not allowed: {page}"
-
-
 class TemplateNotFoundException(HTTPException):
     """
     Raised when the requested template cannot be found

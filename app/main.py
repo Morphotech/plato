@@ -5,7 +5,7 @@ from typing import Callable, List
 from accept_types import get_best_match
 from fastapi import Body, Depends, FastAPI, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from jinja2 import Environment as JinjaEnv
 from jsonschema import ValidationError
 from sqlalchemy import ARRAY, String, cast as db_cast
@@ -15,8 +15,8 @@ from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, 
 from app.db.session import db_session
 from app.deps import get_db, get_jinja_env, get_template_static_directory
 from app.exceptions import UnsupportedMIMEType, PNGCompositionUnavailable, UnsupportedResizingException, \
-    SinglePageUnsupportedException, AspectRatioCompromisedException, NegativePageNumberException, \
-    TemplateNotFoundException, InvalidPageNumberException, JSONSchemaVerificationErrorException
+    SinglePageUnsupportedException, TemplateNotFoundException, InvalidPageNumberException, \
+    JSONSchemaVerificationErrorException
 from app.models.template import Template
 from app.schemas.compose import ComposeBaseSchema, ComposeSchema
 from app.schemas.template_detail import TemplateDetailSchema
