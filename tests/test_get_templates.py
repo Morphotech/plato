@@ -1,10 +1,8 @@
 from fastapi.testclient import TestClient
 import pytest
 from sqlalchemy.orm import Session
-from http import HTTPStatus
+from starlette import status
 from json import loads as json_loads
-from tests import get_message
-from app.error_messages import template_not_found
 
 from app.models.template import Template
 
@@ -34,7 +32,7 @@ class TestGetTemplates:
 
     def test_obtain_all_template_info(self, fastapi_client_local_storage: TestClient):
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_ENDPOINT)
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == NUMBER_OF_TEMPLATES
         template_view_expected_keys = ["template_id", "template_schema", "type", "metadata", "tags",
                                        "example_composition"]
@@ -47,7 +45,7 @@ class TestGetTemplates:
         assert tentative_template_id < NUMBER_OF_TEMPLATES
 
         response = fastapi_client_local_storage.get(f"{self.GET_TEMPLATES_ENDPOINT}{tentative_template_id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         template_info = response.json()
         assert template_info and template_info is not None
         assert json_loads(template_info["template_id"]) == tentative_template_id
@@ -57,8 +55,8 @@ class TestGetTemplates:
         tentative_template_id = 200
         assert tentative_template_id > NUMBER_OF_TEMPLATES
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_BY_ID_ENDPOINT.format(tentative_template_id))
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert get_message(response) == template_not_found.format(tentative_template_id)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {"detail": f"Template '{tentative_template_id}' not found"}
 
 
     def test_obtain_template_by_tags(self, fastapi_client_local_storage: TestClient):
@@ -66,7 +64,7 @@ class TestGetTemplates:
             current_tag = f"tag{i}"
             tags = {"tags": [current_tag]}
             response = fastapi_client_local_storage.get(self.GET_TEMPLATES_ENDPOINT, params=tags)
-            assert response.status_code == HTTPStatus.OK
+            assert response.status_code == status.HTTP_200_OK
             assert len(response.json()) == 1
             template_json = response.json()[0]
             assert current_tag in template_json["tags"]
@@ -77,7 +75,7 @@ class TestGetTemplates:
         current_tag = f"tag{template_id}"
         tags = {"tags": [current_tag]}
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_ENDPOINT, params=tags)
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == 0
 
     def test_obtain_template_by_more_than_one_tag(self, fastapi_client_local_storage: TestClient):
@@ -87,6 +85,6 @@ class TestGetTemplates:
         tags = {"tags": [current_tag, "example"]}
 
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_ENDPOINT, params=tags)
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == 1
 
