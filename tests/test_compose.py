@@ -18,6 +18,7 @@ from app.deps import get_db
 from app.file_storage import DiskFileStorage
 from app.main import app
 from app.models.template import Template
+from app.schemas.template_detail import MIMETypeEnum
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
@@ -91,7 +92,7 @@ def template_test_examples(client_with_jinjaenv: TestClient, db: Session):
                                          schema={"type": "object",
                                                  "properties": {"plain": {"type": "string"}}
                                                  },
-                                         type_="text/html", metadata={},
+                                         type_=MIMETypeEnum.HTML_MIME.value, metadata={},
                                          example_composition={"plain": "plain_example"}, tags=[])
     db.add(plain_text_template_model)
 
@@ -99,21 +100,21 @@ def template_test_examples(client_with_jinjaenv: TestClient, db: Session):
                                         schema={"type": "object",
                                                 "properties": {}
                                                 },
-                                        type_="text/html", metadata={}, example_composition={}, tags=[])
+                                        type_=MIMETypeEnum.HTML_MIME.value, metadata={}, example_composition={}, tags=[])
     db.add(png_image_template_model)
 
     no_image_template_model = Template(id_=NO_IMAGE_TEMPLATE_ID,
                                        schema={"type": "object",
                                                "properties": {}
                                                },
-                                       type_="text/html", metadata={}, example_composition={}, tags=[])
+                                       type_=MIMETypeEnum.HTML_MIME.value, metadata={}, example_composition={}, tags=[])
     db.add(no_image_template_model)
 
     qr_code_template_model = Template(id_=QR_CODE_TEMPLATE_ID,
                                       schema={"type": "object",
                                               "properties": {}
                                               },
-                                      type_="text/html", metadata={"qr_entries": ["qr_code"]},
+                                      type_=MIMETypeEnum.HTML_MIME.value, metadata={"qr_entries": ["qr_code"]},
                                       example_composition={}, tags=[])
     db.add(qr_code_template_model)
     db.commit()
@@ -177,7 +178,7 @@ class TestCompose:
 
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}",
-            headers={"accept": "image/png"}
+            headers={"accept": MIMETypeEnum.PNG_MIME.value}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
@@ -189,7 +190,7 @@ class TestCompose:
 
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?width={expected_resize}",
-            headers={"accept": "image/png"}
+            headers={"accept": MIMETypeEnum.PNG_MIME.value}
         )
 
         def maintains_aspect_ratio(response):
@@ -205,7 +206,7 @@ class TestCompose:
         assert isclose(expected_resize, real_width, abs_tol=error)
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?height={expected_resize}",
-            headers={"accept": "image/png"}
+            headers={"accept": MIMETypeEnum.PNG_MIME.value}
         )
         _, real_height = maintains_aspect_ratio(response)
         assert isclose(expected_resize, real_height, abs_tol=error)
@@ -217,21 +218,19 @@ class TestCompose:
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
             f"?width={intended_resize}&height={intended_resize}",
-            headers={"accept": "image/png"}
+            headers={"accept": MIMETypeEnum.PNG_MIME.value}
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json() == {"detail": "Specifying both width and height compromises the template's aspect ratio"}
 
-        pdf_mimetype = "application/pdf"
-
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
             f"?width={intended_resize}",
-            headers={"accept": pdf_mimetype}
+            headers={"accept": MIMETypeEnum.PDF_MIME.value}
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {pdf_mimetype}"}
+        assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {MIMETypeEnum.PDF_MIME.value}"}
 
     def test_unsupported_mimetype(self, client_with_jinjaenv):
         jpeg_mimetype = "image/jpeg"
