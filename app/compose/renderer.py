@@ -11,11 +11,7 @@ from jsonschema import validate as validate_schema
 from jinja2 import Environment as JinjaEnv
 
 from app.models.template import Template
-
-PDF_MIME = "application/pdf"
-HTML_MIME = "text/html"
-PNG_MIME = "image/png"
-OCTET_STREAM = "application/octet-stream"
+from app.schemas.template_detail import MIMETypeEnum
 
 
 class RendererNotFound(Exception):
@@ -53,7 +49,7 @@ class Renderer(ABC):
         ...
 
     """
-    mime_type = OCTET_STREAM
+    mime_type = MIMETypeEnum.OCTET_STREAM.value
     """
     MIME type for the renderer. Should be implemented by subclass. e.g: 'text/plain', 'application/pdf'
     """
@@ -198,7 +194,7 @@ class PdfRenderer(Renderer):
     PDF Renderer which uses weasyprint to generate PDF documents.
     """
 
-    mime_type = PDF_MIME
+    mime_type = MIMETypeEnum.PDF_MIME.value
 
     def print(self, html_string: str) -> io.BytesIO:
 
@@ -215,7 +211,7 @@ class PNGRenderer(Renderer):
     PNG Renderer which uses weasyprint to generate PNG documents.
     """
 
-    mime_type = PNG_MIME
+    mime_type = MIMETypeEnum.PNG_MIME.value
     _width: int | None = None
     _height: int | None = None
     _page: int = 0
@@ -302,7 +298,7 @@ class HTMLRenderer(Renderer):
     HTML Renderer which uses does nothing but return the plain HTML.
     """
 
-    mime_type = HTML_MIME
+    mime_type = MIMETypeEnum.HTML_MIME.value
 
     def print(self, html_string: str) -> io.BytesIO:
         """
