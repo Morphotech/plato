@@ -19,14 +19,9 @@ from app.exceptions import UnsupportedMIMEType, PNGCompositionUnavailable, Unsup
     JSONSchemaVerificationErrorException
 from app.models.template import Template
 from app.schemas.compose import ComposeBaseSchema, ComposeSchema
-from app.schemas.template_detail import TemplateDetailSchema
+from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 from app.settings import get_settings
 from app.util.setup_util import create_template_environment, initialize_file_storage
-
-PDF_MIME = "application/pdf"
-HTML_MIME = "text/html"
-PNG_MIME = "image/png"
-OCTET_STREAM = "application/octet-stream"
 
 ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
 
@@ -96,19 +91,19 @@ def example_compose(template_id: str, compose_file_schema: ComposeSchema = Query
 def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
              compose_retrieval_function: Callable[[Template], dict], template_id: str, file_name: str,
              compose_schema: ComposeBaseSchema, accept_header: str | None) -> StreamingResponse:
-    accept_header = accept_header or PDF_MIME
+    accept_header = accept_header or MIMETypeEnum.PDF_MIME.value
     mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
 
     if mime_type is None:
         raise UnsupportedMIMEType(accept_header)
 
-    if mime_type == PNG_MIME:
+    if mime_type == MIMETypeEnum.PNG_MIME.value:
         raise PNGCompositionUnavailable()
 
-    if (compose_schema.width is not None or compose_schema.height is not None) and mime_type != PNG_MIME:
+    if (compose_schema.width is not None or compose_schema.height is not None) and mime_type != MIMETypeEnum.PNG_MIME.value:
         raise UnsupportedResizingException(mime_type)
 
-    if compose_schema.page is not None and mime_type != PNG_MIME:
+    if compose_schema.page is not None and mime_type != MIMETypeEnum.PNG_MIME.value:
         raise SinglePageUnsupportedException(mime_type)
 
     template_model: Template | None = db.query(Template).filter_by(id=template_id).one_or_none()
