@@ -97,13 +97,13 @@ def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
     if mime_type is None:
         raise UnsupportedMIMEType(accept_header)
 
-    if mime_type == MIMETypeEnum.PNG_MIME.value:
+    if mime_type == MIMETypeEnum.PNG_MIME:
         raise PNGCompositionUnavailable()
 
-    if (compose_schema.width is not None or compose_schema.height is not None) and mime_type != MIMETypeEnum.PNG_MIME.value:
+    if (compose_schema.width is not None or compose_schema.height is not None) and mime_type != MIMETypeEnum.PNG_MIME:
         raise UnsupportedResizingException(mime_type)
 
-    if compose_schema.page is not None and mime_type != MIMETypeEnum.PNG_MIME.value:
+    if compose_schema.page is not None and mime_type != MIMETypeEnum.PNG_MIME:
         raise SinglePageUnsupportedException(mime_type)
 
     template_model: Template | None = db.query(Template).filter_by(id=template_id).one_or_none()
