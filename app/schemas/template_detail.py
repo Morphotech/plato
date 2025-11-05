@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import TYPE_CHECKING, Set
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -15,4 +16,11 @@ class TemplateDetailSchema(BaseModel):
     example_composition: dict
 
     model_config = ConfigDict(from_attributes=True, extra='forbid')
+
+
+class MIMETypeEnum(str, Enum):
+    PDF_MIME = "application/pdf"
+    HTML_MIME = "text/html"
+    PNG_MIME = "image/png"
+    OCTET_STREAM = "application/octet-stream"
 
