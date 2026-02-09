@@ -71,27 +71,27 @@ def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db
 
 
 @app.post("/template/{template_id}/compose", response_model=None)
-def compose_file(template_id: str, compose_file_schema: ComposeSchema = Query(...), accept: str | None = Header(None),
+def compose_file(template_id: str, compose_file_schema: ComposeSchema = Query(...), custom_accept: str | None = Header(None),
                  payload: dict = Body(...), jinja_env: JinjaEnv = Depends(get_jinja_env),
                  template_static_directory: str = Depends(get_template_static_directory),
                  db: Session = Depends(get_db)) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
-                    lambda t: payload, template_id, "compose", compose_file_schema, accept)
+                    lambda t: payload, template_id, "compose", compose_file_schema, custom_accept)
 
 
 @app.get("/template/{template_id}/example", response_model=None)
-def example_compose(template_id: str, compose_file_schema: ComposeSchema = Query(...), accept: str | None = Header(None),
+def example_compose(template_id: str, compose_file_schema: ComposeSchema = Query(...), custom_accept: str | None = Header(None),
                     jinja_env: JinjaEnv = Depends(get_jinja_env),
                     template_static_directory: str = Depends(get_template_static_directory),
                     db: Session = Depends(get_db)) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
-                    lambda t: t.example_composition, template_id, "example", compose_file_schema, accept)
+                    lambda t: t.example_composition, template_id, "example", compose_file_schema, custom_accept)
 
 
 def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
              compose_retrieval_function: Callable[[Template], dict], template_id: str, file_name: str,
-             compose_schema: ComposeBaseSchema, accept_header: str | None) -> StreamingResponse:
-    accept_header = accept_header or MIMETypeEnum.PDF_MIME.value
+             compose_schema: ComposeBaseSchema, custom_accept: str | None) -> StreamingResponse:
+    accept_header = custom_accept or MIMETypeEnum.PDF_MIME.value
     mime_type = get_best_match(accept_header, ALL_AVAILABLE_MIME_TYPES)
 
     if mime_type is None:
