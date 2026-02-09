@@ -1,9 +1,14 @@
+import os
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
+from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+from google.cloud import storage
+from google.cloud.storage import Client
 from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +23,7 @@ from app.settings import get_settings
 settings = get_settings()
 settings.BUCKET_NAME = 'test_template_bucket'
 
+TEST_RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
 @pytest.fixture(scope="session")
 def db():
@@ -68,7 +74,12 @@ def fastapi_client_s3_storage(db):
 def fastapi_client_gcs_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir:
+        with tempfile.TemporaryDirectory() as file_dir, mock.patch.object(Client, "from_service_account_json") as mock_init_client:
+            gcs_client = MagicMock(spec=Client)
+            bucket = MagicMock(spec=storage.Bucket)
+            gcs_client.bucket.return_value = bucket
+            mock_init_client.return_value = gcs_client
+            app.state.mocked_bucket = bucket
             app.state.file_storage = GCSFileStorage(file_dir, settings.BUCKET_NAME)
             app.state.jinja_env = JinjaEnv(
                 loader=DictLoader({}),
