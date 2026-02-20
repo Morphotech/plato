@@ -5,7 +5,7 @@ from unittest import mock
 from unittest.mock import call, MagicMock
 
 import pytest
-from app.file_storage import S3FileStorage
+from app.file_storage import S3FileStorage, NoIndexTemplateFound
 from app.models import Template
 from google.cloud.storage import Blob
 from sqlalchemy.orm import Session
@@ -79,6 +79,36 @@ class TestFileStorage:
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
+
+        calls = [call(path=f"{BASE_DIR}/static", template_directory=BASE_DIR),
+                 call(path=f"{BASE_DIR}/templates/0/0", template_directory=BASE_DIR)]
+        mock_s3_get_file.assert_has_calls(calls, any_order=True)
+        # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
+        # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
+
+    @pytest.mark.usefixtures("populate_db")
+    @mock.patch.object(S3FileStorage, "get_file")
+    def test_file_storage_load_templates_no_template_file_found(self, mock_s3_get_file,
+                                                                fastapi_client_s3_storage: TestClient, db: Session):
+        mock_s3_get_file.side_effect = [{"templating/static/0/abc_1": b"static content",
+                                         "templating/static/0/abc_2": b"static content"},
+                                        {}]
+
+        with TemporaryDirectory() as temp:
+            # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
+            template_dir = create_child_temp_folder(temp)
+
+            s3_file_storage = fastapi_client_s3_storage.app.state.file_storage
+            with pytest.raises(NoIndexTemplateFound):
+                s3_file_storage.load_templates(template_dir, BASE_DIR, db)
+
+            static_file_1 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
+            static_file_2 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
+            template_file_1 = f'{template_dir}/templating/{get_local_template_file_path(template_id="0")}'
+
+            assert pathlib.Path(static_file_1).is_file()
+            assert pathlib.Path(static_file_2).is_file()
+            assert not pathlib.Path(template_file_1).is_file()
 
         calls = [call(path=f"{BASE_DIR}/static", template_directory=BASE_DIR),
                  call(path=f"{BASE_DIR}/templates/0/0", template_directory=BASE_DIR)]
