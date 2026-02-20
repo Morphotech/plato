@@ -109,17 +109,17 @@ class TestFileStorage:
 
     def test_file_storage_get_file_gcs(self, fastapi_client_gcs_storage: TestClient):
         gcs_file_storage = fastapi_client_gcs_storage.app.state.file_storage
-        blob_1 = MagicMock(Blob)
-        blob_2 = MagicMock(Blob)
-        blob_3 = MagicMock(Blob)
+        template_blob = MagicMock(Blob)
+        static_blob_1 = MagicMock(Blob)
+        static_blob_2 = MagicMock(Blob)
 
-        blob_1.name, blob_2.name, blob_3.name = ["templating/templates/0/0", "templating/static/0/abc_1", "templating/static/0/abc_2"]
-        blob_1.download_as_bytes.return_value = b'file content'
-        blob_2.download_as_bytes.return_value = b'static content'
-        blob_3.download_as_bytes.return_value = b'static content'
+        template_blob.name, static_blob_1.name, static_blob_2.name = ["templating/templates/0/0", "templating/static/0/abc_1", "templating/static/0/abc_2"]
+        template_blob.download_as_bytes.return_value = b'file content'
+        static_blob_1.download_as_bytes.return_value = b'static content'
+        static_blob_2.download_as_bytes.return_value = b'static content'
 
         bucket = fastapi_client_gcs_storage.app.state.mocked_bucket
-        bucket.list_blobs.side_effect = [[blob_2, blob_3], [blob_1]]
+        bucket.list_blobs.side_effect = [[static_blob_1, static_blob_2], [template_blob]]
 
         static_files_dict = gcs_file_storage.get_file(f"{BASE_DIR}/static", BASE_DIR)
         assert static_files_dict == {"/static/0/abc_1": b"static content",
