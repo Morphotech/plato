@@ -20,8 +20,6 @@ gunicorn = "^23.0.0"
 psycopg2-binary = "^2.9.10"
 alembic = "^1.16.2"
 jsonschema = "^4.24.0"
-jmespath = "1.0.1"
-
 # S3 and GCS
 smart-open = { version = "6.4.0", extras = ["aws", "gcs"] }
 
@@ -40,6 +38,7 @@ num2words = "0.5.10"
 [tool.poetry.group.dev.dependencies]
 pytest = "~8.4.1"
 coverage = "~7.4.4"
+moto = { version = "5.1.8", extras = ["s3"] }
 testcontainers = "^4.10.0"
 blinker = "1.4"
 pypdf = "^5.8.0"
