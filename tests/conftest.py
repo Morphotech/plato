@@ -23,8 +23,6 @@ from app.settings import get_settings
 settings = get_settings()
 settings.BUCKET_NAME = 'test_template_bucket'
 
-TEST_RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
-
 @pytest.fixture(scope="session")
 def db():
     if settings.IN_DOCKER:
