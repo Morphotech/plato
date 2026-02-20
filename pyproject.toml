@@ -20,6 +20,7 @@ gunicorn = "^23.0.0"
 psycopg2-binary = "^2.9.10"
 alembic = "^1.16.2"
 jsonschema = "^4.24.0"
+jmespath = "1.0.1"
 
 # S3 and GCS
 smart-open = { version = "6.4.0", extras = ["aws", "gcs"] }
