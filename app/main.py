@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from mimetypes import guess_extension
-from typing import Callable, List
+from typing import Callable, List, Annotated
 
 from accept_types import get_best_match
 from fastapi import Body, Depends, FastAPI, Query, Header
@@ -51,7 +51,7 @@ app.add_middleware(
 
 
 @app.get("/templates/{template_id}", response_model=TemplateDetailSchema)
-def template_by_id(template_id: str, db: Session = Depends(get_db)) -> Template:
+def template_by_id(template_id: str, db: Annotated[Session, Depends(get_db)]) -> Template:
 
     template = db.query(Template).filter_by(id=template_id).one_or_none()
     if template is None:
@@ -61,7 +61,7 @@ def template_by_id(template_id: str, db: Session = Depends(get_db)) -> Template:
 
 
 @app.get("/templates", response_model=List[TemplateDetailSchema])
-def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db)) -> List[Template]:
+def templates(db: Annotated[Session, Depends(get_db)], tags: Annotated[List[str] | None, Query(...)] = None) -> List[Template]:
     template_query: SqlQuery = db.query(Template)
 
     if tags:
@@ -71,19 +71,21 @@ def templates(tags: List[str] | None = Query(None), db: Session = Depends(get_db
 
 
 @app.post("/template/{template_id}/compose", response_model=None)
-def compose_file(template_id: str, compose_file_schema: ComposeSchema = Query(...), custom_accept: str | None = Header(None),
-                 payload: dict = Body(...), jinja_env: JinjaEnv = Depends(get_jinja_env),
-                 template_static_directory: str = Depends(get_template_static_directory),
-                 db: Session = Depends(get_db)) -> StreamingResponse:
+def compose_file(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
+                 payload: Annotated[dict, Body(...)], jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
+                 template_static_directory: Annotated[str, Depends(get_template_static_directory)],
+                 db: Annotated[Session, Depends(get_db)],
+                 custom_accept: Annotated[str | None, Header(...)] = None) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
                     lambda t: payload, template_id, "compose", compose_file_schema, custom_accept)
 
 
 @app.get("/template/{template_id}/example", response_model=None)
-def example_compose(template_id: str, compose_file_schema: ComposeSchema = Query(...), custom_accept: str | None = Header(None),
-                    jinja_env: JinjaEnv = Depends(get_jinja_env),
-                    template_static_directory: str = Depends(get_template_static_directory),
-                    db: Session = Depends(get_db)) -> StreamingResponse:
+def example_compose(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
+                    jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
+                    template_static_directory: Annotated[str, Depends(get_template_static_directory)],
+                    db: Annotated[Session, Depends(get_db)],
+                    custom_accept: Annotated[str | None, Header(...)] = None) -> StreamingResponse:
     return _compose(db, jinja_env, template_static_directory,
                     lambda t: t.example_composition, template_id, "example", compose_file_schema, custom_accept)
 
