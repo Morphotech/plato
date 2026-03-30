@@ -1,7 +1,10 @@
 # Plato Microservice
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
 
 A python REST API for document composition through jsonschema.
 
