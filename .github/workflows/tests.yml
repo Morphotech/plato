@@ -64,8 +64,7 @@ jobs:
       - name: Run tests
         run: poetry run coverage run -m pytest && poetry run coverage xml -i -o coverage.xml
 
-      - name: Run codacy-coverage-reporter
-        uses: codacy/codacy-coverage-reporter-action@v1.3.0
-        with:
-          project-token: ${{ secrets.CODACY_KEY }}
-          coverage-reports: coverage.xml  # Path to the coverage report file
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_KEY }}
