@@ -7,9 +7,9 @@ from app.exceptions import AspectRatioCompromisedException
 
 
 class ComposeBaseSchema(BaseModel):
-    page: NonNegativeInt | None
-    width: NonNegativeInt | None
-    height: NonNegativeInt | None
+    page: NonNegativeInt | None = None
+    width: NonNegativeInt | None = None
+    height: NonNegativeInt | None = None
 
 
 class ComposeSchema(ComposeBaseSchema):
