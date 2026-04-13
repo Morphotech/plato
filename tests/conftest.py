@@ -2,7 +2,7 @@ import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest import mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -47,24 +47,31 @@ def _setup_test_db(database_uri):
 
 @pytest.fixture(scope='class')
 def fastapi_client_s3_storage(db):
-    @asynccontextmanager
-    async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = S3FileStorage(file_dir, settings.BUCKET_NAME)
-            app.state.jinja_env = JinjaEnv(
-                loader=DictLoader({}),
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
-            yield
+    mock_aws_credentials_data = """\
+    {"aws_access_key_id": "test_aws_key",
+     "aws_secret_access_key": "test_secret_key",
+     "region_name": "test_region"}
+     """
+    mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
+    with patch("builtins.open", mock_aws_open):
+        @asynccontextmanager
+        async def mock_lifespan(app):
+            with tempfile.TemporaryDirectory() as file_dir:
+                app.state.file_storage = S3FileStorage(file_dir, settings.BUCKET_NAME)
+                app.state.jinja_env = JinjaEnv(
+                    loader=DictLoader({}),
+                    autoescape=select_autoescape(["html", "xml"]),
+                    auto_reload=True
+                )
+                current_folder = Path(__file__).resolve().parent
+                app.state.template_static_directory = str(current_folder / "resources/static")
+                yield
 
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
+        app.dependency_overrides[get_db] = lambda: db
+        app.router.lifespan_context = mock_lifespan
 
-    with TestClient(app) as client:
-        yield client
+        with TestClient(app) as client:
+            yield client
 
 
 @pytest.fixture(scope='class')
