@@ -1,3 +1,4 @@
+import json
 import pathlib
 from abc import ABC
 from enum import Enum
@@ -112,6 +113,8 @@ class S3FileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
         super().__init__(data_directory)
         self.bucket_name = bucket_name
+        with open(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json") as aws_credentials_file:
+            self.aws_credentials_dict = json.loads(aws_credentials_file.read())
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
@@ -126,7 +129,7 @@ class S3FileStorage(PlatoFileStorage):
          A dictionary with key as file's relative location on s3-bucket and value as file's content
         """
         key_content_mapping: dict = {}
-        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path):
+        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path, **self.aws_credentials_dict):
             if key[-1] == '/' or not content:
                 # Is a directory
                 continue
