@@ -131,8 +131,8 @@ class TestFileStorage:
         template_files_dict = s3_file_storage.get_file(f"{BASE_DIR}/templates", BASE_DIR)
         assert template_files_dict == {"/templates/0/0": b'file content'}
 
-        calls = [call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/static"),
-                 call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/templates")]
+        calls = [call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/static", **s3_file_storage.aws_credentials_dict),
+                 call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/templates", **s3_file_storage.aws_credentials_dict)]
         mock_iter_bucket.assert_has_calls(calls, any_order=True)
         # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
         # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
