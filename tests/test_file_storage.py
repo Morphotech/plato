@@ -137,6 +137,15 @@ class TestFileStorage:
         # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
         # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
 
+    @mock.patch("app.file_storage.S3FileStorage.get_aws_credentials")
+    def test_get_aws_credentials(self, mock_get_aws_credentials, fastapi_client_s3_storage: TestClient):
+        mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key_unit_test",
+                                                 "aws_secret_access_key": "test_secret_key_unit_test",
+                                                 "region_name": "test_region_unit_test"}
+        s3_file_storage = fastapi_client_s3_storage.app.state.file_storage
+        assert s3_file_storage.get_aws_credentials(f"path_to_aws_credentials/") == mock_get_aws_credentials.return_value
+
+
     def test_file_storage_get_file_gcs(self, fastapi_client_gcs_storage: TestClient):
         gcs_file_storage = fastapi_client_gcs_storage.app.state.file_storage
         template_blob = MagicMock(Blob)
@@ -161,3 +170,4 @@ class TestFileStorage:
         calls = [call(prefix=f"{BASE_DIR}/static"),
                  call(prefix=f"{BASE_DIR}/templates")]
         bucket.list_blobs.assert_has_calls(calls)
+
