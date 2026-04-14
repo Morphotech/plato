@@ -2,7 +2,7 @@ import pathlib
 from tempfile import TemporaryDirectory
 
 from unittest import mock
-from unittest.mock import call, MagicMock
+from unittest.mock import call, MagicMock, mock_open
 
 import pytest
 from app.file_storage import S3FileStorage, NoIndexTemplateFound
@@ -57,6 +57,21 @@ class TestFileStorage:
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
+
+    def test_get_aws_credentials(self):
+        mock_aws_credentials_data = """\
+            {"aws_access_key_id": "test_aws_key_unit_test",
+             "aws_secret_access_key": "test_secret_key_unit_test",
+             "region_name": "test_region_unit_test"}
+             """
+        mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
+
+        with mock.patch("builtins.open", mock_aws_open):
+            result = S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/")
+
+        assert result == {"aws_access_key_id": "test_aws_key_unit_test",
+                          "aws_secret_access_key": "test_secret_key_unit_test",
+                          "region_name": "test_region_unit_test"}
 
     @pytest.mark.usefixtures("populate_db")
     @mock.patch.object(S3FileStorage, "get_file")
@@ -136,14 +151,6 @@ class TestFileStorage:
         mock_iter_bucket.assert_has_calls(calls, any_order=True)
         # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
         # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
-
-    @mock.patch("app.file_storage.S3FileStorage.get_aws_credentials")
-    def test_get_aws_credentials(self, mock_get_aws_credentials, fastapi_client_s3_storage: TestClient):
-        mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key_unit_test",
-                                                 "aws_secret_access_key": "test_secret_key_unit_test",
-                                                 "region_name": "test_region_unit_test"}
-        s3_file_storage = fastapi_client_s3_storage.app.state.file_storage
-        assert s3_file_storage.get_aws_credentials(f"path_to_aws_credentials/") == mock_get_aws_credentials.return_value
 
 
     def test_file_storage_get_file_gcs(self, fastapi_client_gcs_storage: TestClient):
