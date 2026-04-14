@@ -137,7 +137,8 @@ class S3FileStorage(PlatoFileStorage):
             key_content_mapping[new_key] = content
         return key_content_mapping
 
-    def get_aws_credentials(self, path_to_file: str) -> Any:
+    @staticmethod
+    def get_aws_credentials(path_to_file: str) -> Any:
         with open(f"{path_to_file}") as aws_credentials_file:
             return json.loads(aws_credentials_file.read())
 
