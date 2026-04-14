@@ -113,8 +113,7 @@ class S3FileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
         super().__init__(data_directory)
         self.bucket_name = bucket_name
-        with open(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json") as aws_credentials_file:
-            self.aws_credentials_dict = json.loads(aws_credentials_file.read())
+        self.aws_credentials_dict = self.get_aws_credentials(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json")
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
@@ -137,6 +136,10 @@ class S3FileStorage(PlatoFileStorage):
             new_key = key[len(template_directory):]
             key_content_mapping[new_key] = content
         return key_content_mapping
+
+    def get_aws_credentials(self, path_to_file: str) -> Any:
+        with open(f"{path_to_file}") as aws_credentials_file:
+            return json.loads(aws_credentials_file.read())
 
 
 class GCSFileStorage(PlatoFileStorage):
