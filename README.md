@@ -84,6 +84,15 @@ This will permit you to use the S3 AWS service, should you provide a JSON file i
 The file should have the following name so that plato can recognize it:
 *aws_credentials.json*
 
+The AWS S3 credentials JSON file should also have the following format:
+```json
+{"aws_access_key_id": "AWS access key ID",
+"aws_secret_access_key":"AWS secret access key",
+"region_name":"Default region when creating new connections"}
+```
+*Note: These are the necessary properties for functionality. If any other properties are needed, you can click this [link](https://docs.aws.amazon.com/boto3/latest/reference/core/session.html#boto3.session.Session),
+which leads to the AWS documentation, in regard to session parameters.*
+
 Alternatively, you can use the GCS service following the same process. However, the JSON file for the GCS service will need a
 different name:
 *service_account_key.json*
