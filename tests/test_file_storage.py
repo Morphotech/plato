@@ -2,10 +2,10 @@ import pathlib
 from tempfile import TemporaryDirectory
 
 from unittest import mock
-from unittest.mock import call, MagicMock
+from unittest.mock import call, MagicMock, mock_open
 
 import pytest
-from app.file_storage import S3FileStorage, NoIndexTemplateFound
+from app.file_storage import S3FileStorage, NoIndexTemplateFound, FileStorageError
 from app.models import Template
 from google.cloud.storage import Blob
 from sqlalchemy.orm import Session
@@ -57,6 +57,38 @@ class TestFileStorage:
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
+
+    def test_get_aws_credentials(self):
+        mock_aws_credentials_data = """\
+            {"aws_access_key_id": "test_aws_key_unit_test",
+             "aws_secret_access_key": "test_secret_key_unit_test",
+             "region_name": "test_region_unit_test"}
+             """
+        mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
+
+        with mock.patch("builtins.open", mock_aws_open):
+            result = S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
+
+        assert result == {"aws_access_key_id": "test_aws_key_unit_test",
+                          "aws_secret_access_key": "test_secret_key_unit_test",
+                          "region_name": "test_region_unit_test"}
+
+    def test_get_aws_credentials_no_file_found(self):
+        with pytest.raises(FileStorageError):
+            S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
+
+    def test_get_aws_credentials_invalid_json_error(self):
+        mock_aws_credentials_data = """\
+            {"aws_access_key_id": "test_aws_key_unit_test",
+             "aws_secret_access_key": "test_secret_key_unit_test",
+             "region_name": "test_region_unit_test",
+             invalid_key: invalid_value}
+             """
+        mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
+
+        with pytest.raises(FileStorageError):
+            with mock.patch("builtins.open", mock_aws_open):
+                S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
 
     @pytest.mark.usefixtures("populate_db")
     @mock.patch.object(S3FileStorage, "get_file")
@@ -131,11 +163,12 @@ class TestFileStorage:
         template_files_dict = s3_file_storage.get_file(f"{BASE_DIR}/templates", BASE_DIR)
         assert template_files_dict == {"/templates/0/0": b'file content'}
 
-        calls = [call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/static"),
-                 call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/templates")]
+        calls = [call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/static", **s3_file_storage.aws_credentials_dict),
+                 call(bucket_name="test_template_bucket", prefix=f"{BASE_DIR}/templates", **s3_file_storage.aws_credentials_dict)]
         mock_iter_bucket.assert_has_calls(calls, any_order=True)
         # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
         # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
+
 
     def test_file_storage_get_file_gcs(self, fastapi_client_gcs_storage: TestClient):
         gcs_file_storage = fastapi_client_gcs_storage.app.state.file_storage
@@ -161,3 +194,4 @@ class TestFileStorage:
         calls = [call(prefix=f"{BASE_DIR}/static"),
                  call(prefix=f"{BASE_DIR}/templates")]
         bucket.list_blobs.assert_has_calls(calls)
+

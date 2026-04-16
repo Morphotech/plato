@@ -1,3 +1,4 @@
+import json
 import pathlib
 from abc import ABC
 from enum import Enum
@@ -112,6 +113,7 @@ class S3FileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
         super().__init__(data_directory)
         self.bucket_name = bucket_name
+        self.aws_credentials_dict = self.get_aws_credentials(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json")
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """
@@ -126,7 +128,7 @@ class S3FileStorage(PlatoFileStorage):
          A dictionary with key as file's relative location on s3-bucket and value as file's content
         """
         key_content_mapping: dict = {}
-        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path):
+        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path, **self.aws_credentials_dict):
             if key[-1] == '/' or not content:
                 # Is a directory
                 continue
@@ -134,6 +136,18 @@ class S3FileStorage(PlatoFileStorage):
             new_key = key[len(template_directory):]
             key_content_mapping[new_key] = content
         return key_content_mapping
+
+    @staticmethod
+    def get_aws_credentials(path_to_file: str) -> Dict[str, Any]:
+        try:
+            with open(f"{path_to_file}", encoding="utf-8") as aws_credentials_file:
+                return json.loads(aws_credentials_file.read())
+        except FileNotFoundError as exc:
+            raise FileStorageError(f"AWS credentials file not found at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs.") from exc
+        except json.JSONDecodeError as exc:
+            raise FileStorageError(f"Invalid JSON in AWS credentials file at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs.") from exc
 
 
 class GCSFileStorage(PlatoFileStorage):

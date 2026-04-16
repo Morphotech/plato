@@ -49,7 +49,10 @@ def _setup_test_db(database_uri):
 def fastapi_client_s3_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir:
+        with tempfile.TemporaryDirectory() as file_dir, mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
+            mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
+                                                     "aws_secret_access_key": "test_secret_key",
+                                                     "region_name": "test_region"}
             app.state.file_storage = S3FileStorage(file_dir, settings.BUCKET_NAME)
             app.state.jinja_env = JinjaEnv(
                 loader=DictLoader({}),
