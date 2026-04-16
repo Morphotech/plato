@@ -2,7 +2,7 @@ import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest import mock
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -49,7 +49,7 @@ def _setup_test_db(database_uri):
 def fastapi_client_s3_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir, patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
+        with tempfile.TemporaryDirectory() as file_dir, mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
             mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
                                                      "aws_secret_access_key": "test_secret_key",
                                                      "region_name": "test_region"}

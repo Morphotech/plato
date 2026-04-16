@@ -138,9 +138,16 @@ class S3FileStorage(PlatoFileStorage):
         return key_content_mapping
 
     @staticmethod
-    def get_aws_credentials(path_to_file: str) -> Any:
-        with open(f"{path_to_file}") as aws_credentials_file:
-            return json.loads(aws_credentials_file.read())
+    def get_aws_credentials(path_to_file: str) -> Dict[str, Any]:
+        try:
+            with open(f"{path_to_file}", encoding="utf-8") as aws_credentials_file:
+                return json.loads(aws_credentials_file.read())
+        except FileNotFoundError as exc:
+            raise FileStorageError(f"AWS credentials file not found at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs.") from exc
+        except json.JSONDecodeError as exc:
+            raise FileStorageError(f"Invalid JSON in AWS credentials file at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs.") from exc
 
 
 class GCSFileStorage(PlatoFileStorage):

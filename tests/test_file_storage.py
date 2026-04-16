@@ -5,7 +5,7 @@ from unittest import mock
 from unittest.mock import call, MagicMock, mock_open
 
 import pytest
-from app.file_storage import S3FileStorage, NoIndexTemplateFound
+from app.file_storage import S3FileStorage, NoIndexTemplateFound, FileStorageError
 from app.models import Template
 from google.cloud.storage import Blob
 from sqlalchemy.orm import Session
@@ -67,11 +67,28 @@ class TestFileStorage:
         mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
 
         with mock.patch("builtins.open", mock_aws_open):
-            result = S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/")
+            result = S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
 
         assert result == {"aws_access_key_id": "test_aws_key_unit_test",
                           "aws_secret_access_key": "test_secret_key_unit_test",
                           "region_name": "test_region_unit_test"}
+
+    def test_get_aws_credentials_no_file_found(self):
+        with pytest.raises(FileStorageError):
+            S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
+
+    def test_get_aws_credentials_invalid_json_error(self):
+        mock_aws_credentials_data = """\
+            {"aws_access_key_id": "test_aws_key_unit_test",
+             "aws_secret_access_key": "test_secret_key_unit_test",
+             "region_name": "test_region_unit_test",
+             invalid_key: invalid_value}
+             """
+        mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
+
+        with pytest.raises(FileStorageError):
+            with mock.patch("builtins.open", mock_aws_open):
+                S3FileStorage.get_aws_credentials(f"path_to_aws_credentials/aws_credentials.json")
 
     @pytest.mark.usefixtures("populate_db")
     @mock.patch.object(S3FileStorage, "get_file")
