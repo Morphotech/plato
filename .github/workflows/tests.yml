@@ -34,9 +34,9 @@ jobs:
           --health-retries=5
 
     env:
-      DATA_DIR: /plato-data/
-      CREDENTIALS_DIR: /credentials
-      TEMPLATE_DIRECTORY: /plato-data/templates/
+      DATA_DIR: ${{ github.workspace }}/plato-data/
+      CREDENTIALS_DIR: ${{ github.workspace }}/credentials
+      TEMPLATE_DIRECTORY: ${{ github.workspace }}/plato-data/templates/
       TEMPLATE_DIRECTORY_NAME: templating
       DB_HOST: localhost
       DB_PORT: 5456
