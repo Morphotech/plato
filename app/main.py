@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from mimetypes import guess_extension
 from typing import Callable, List, Annotated
@@ -34,10 +35,14 @@ from app.util.setup_util import create_template_environment, initialize_file_sto
 
 ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(api: FastAPI):
     settings = get_settings()
+    logger.info(f"Plato starting up (storage={settings.STORAGE_TYPE}, template_directory={settings.TEMPLATE_DIRECTORY})")
+
     api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
 
     with db_session() as db:
@@ -46,6 +51,7 @@ async def lifespan(api: FastAPI):
     api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
     api.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
     yield
+    logger.info("Plato shutting down")
 
 
 app = FastAPI(lifespan=lifespan)
