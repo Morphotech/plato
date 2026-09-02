@@ -20,22 +20,9 @@ These instructions will get the project up and running on your local environment
 - [Docker-compose](https://docs.docker.com/compose/)
 
 The project depends on [weasyprint](https://weasyprint.org/) for writing PDF from HTML so make sure you have everything
-weasyprint needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
+weasyprint needs to run by following the instructions on this [page](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation).
 
 The instructions are also available below.
-
-#### Debian/Ubuntu
-
-```bash
-sudo apt-get install build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
-```
-
-#### MacOS
-
-```bash
-brew install weasyprint
-```
 
 Check if weasyprint is working:
 
@@ -55,6 +42,15 @@ Alternatively, if the above does not work, you can fetch the libfontconfig files
 ```bash
 sudo cp /opt/homebrew/Cellar/fontconfig/<VERSION>/lib/libfontconfig.* /usr/local/lib
 ````
+
+_Note_: this copy can go stale after a later `brew upgrade` of `fontconfig`/`pango` and cause a *different*
+error instead (`OSError: cannot load library 'libpangoft2-1.0-0'`), because the outdated copy in
+`/usr/local/lib` gets picked up ahead of Homebrew's current one. If you hit that error, remove the
+previously-copied files and re-test with `weasyprint --info` before copying anything again:
+
+```bash
+sudo rm /usr/local/lib/libfontconfig.dylib /usr/local/lib/libfontconfig.1.dylib /usr/local/lib/libfontconfig.a
+```
 
 ### Installing
 
@@ -96,6 +92,17 @@ which leads to the AWS documentation, in regard to session parameters.*
 Alternatively, you can use the GCS service following the same process. However, the JSON file for the GCS service will need a
 different name:
 *service_account_key.json*
+
+#### Logging
+
+Plato logs to the console and to a rotating JSON file at `${DATA_DIR}/logs/app.log` (rotated at midnight, retained 
+for `LOG_DURATION_DAYS` days — default 7).
+
+Configure verbosity via the `LOG_LEVEL` (console) and `FILE_LOG_LEVEL` (file) environment variables —
+both default to `INFO`.
+
+When adding log statements in application code, use `logging.getLogger(__name__)` — modules under `app/`
+automatically inherit Plato's console and file handlers this way.
 
 #### Database
 
