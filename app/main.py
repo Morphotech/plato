@@ -28,6 +28,7 @@ from app.exceptions import UnsupportedMIMEType, PNGCompositionUnavailable, Unsup
     SinglePageUnsupportedException, TemplateNotFoundException, InvalidPageNumberException, \
     JSONSchemaVerificationErrorException
 from app.models.template import Template
+from app.request_logger_route import RequestLoggerRoute
 from app.schemas.compose import ComposeBaseSchema, ComposeSchema
 from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 from app.settings import get_settings
@@ -55,6 +56,7 @@ async def lifespan(api: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.router.route_class = RequestLoggerRoute
 
 app.add_middleware(
     CORSMiddleware,
