@@ -22,15 +22,6 @@ sqlalchemy = { version = "^2.0.52", extras = ["postgresql_psycopg2binary"] }
 alembic = "1.19.1"
 jsonschema = "^4.26.0"
 smart-open = { version = "8.0.1", extras = ["s3", "gcs"] }
-psycopg2-binary = "^2.9.10"
-alembic = "^1.16.2"
-jsonschema = "^4.24.0"
-smart-open = { version = "6.4.0", extras = ["s3", "gcs"] }
-
-# Database
-sqlalchemy = { version = "^2.0", extras = ["postgresql_psycopg2binary"] }
-
-#HTTP
 accept-types = "0.4.1"
 
 # Templating
