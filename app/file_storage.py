@@ -90,11 +90,11 @@ class PlatoFileStorage(ABC):
             template_directory_name: Base directory
             db (Session): The database session to query templates from
         """
-        if type(self) == DiskFileStorage:
-            logger.info(f"Using local storage; Skipping template loading.")
+        if isinstance(self, DiskFileStorage):
+            logger.info("Using local storage; Skipping template loading.")
             return
 
-        logger.info(f"Loading templates...")
+        logger.info("Loading templates...")
         # get static files
         static_files = self.get_file(path=base_static_path(template_directory_name),
                                      template_directory=template_directory_name)
@@ -111,7 +111,7 @@ class PlatoFileStorage(ABC):
             self.write_files(files=template_files, target_directory=target_directory)
             logger.info(f"Loaded {template.id} template.")
 
-        logger.info(f"Finished loading templates.")
+        logger.info("Finished loading templates.")
 
 
 class DiskFileStorage(PlatoFileStorage):
