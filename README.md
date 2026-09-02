@@ -146,7 +146,8 @@ Locally:
 poetry run pytest
 ```
 
-Running tests inside the docker containers (you might need to build the plato docker image first):
+Running tests inside the docker containers (this builds its own test image from
+`docker/test.Dockerfile`, independent of the `plato-api` production image):
 
 ```bash
 docker compose -f docker-compose.ci.yml up -d database
@@ -184,7 +185,7 @@ To see the available options for each command, you can run `python app/cli.py <c
 4. Build and push the docker image with the command:
 
     ```bash
-    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
+    docker buildx build -f docker/prod.Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
     docker push vizidox/plato:<VERSION>
     ```
 
