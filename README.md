@@ -146,18 +146,6 @@ Locally:
 poetry run pytest
 ```
 
-Running tests inside the docker containers (this builds its own test image from
-`docker/test.Dockerfile`, independent of the `plato-api` production image):
-
-```bash
-docker compose -f docker-compose.ci.yml up -d database
-
-docker compose -f docker-compose.ci.yml run --rm test-plato
-
-docker compose -f docker-compose.ci.yml down
-
-```
-
 ## Use Command Line Interface
 
 You can use the CLI to manage templates directly from the command line. To use it, you need run the command `python app/cli.py <command> <args>`.
