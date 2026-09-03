@@ -1,18 +1,17 @@
-import logging
 import json
+import logging
 import pathlib
 from abc import ABC
 from enum import Enum
 from typing import Dict, Any
 
-from smart_open import s3
 from google.cloud.storage import Client
+from smart_open import s3
 from sqlalchemy.orm import Session
 
 from app.models.template import Template
 from app.settings import get_settings
-from app.util.path_util import base_static_path, template_path
-
+from app.util.path_util import template_path
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,8 @@ class PlatoFileStorage(ABC):
     def load_templates(self, target_directory: str, template_directory_name: str, db: Session) -> None:
         """
         Gets templates from the bucket which are associated with ones available in the DB.
-        Expected directory structure is {template_directory_name}/{template_id}
+        Expected directory structure is {template_directory_name}/{template_id}/{template_id}.html,
+        with any additional static content under {template_directory_name}/{template_id}/static/
         Note: This method does nothing if the file storage is disk
 
         Args:
@@ -95,18 +95,13 @@ class PlatoFileStorage(ABC):
             return
 
         logger.info("Loading templates...")
-        # get static files
-        static_files = self.get_file(path=base_static_path(template_directory_name),
-                                     template_directory=template_directory_name)
-
-        self.write_files(files=static_files, target_directory=target_directory)
-
         templates = db.query(Template).all()
         for template in templates:
-            # get template content
+            # get template folder content (index HTML file + static/ subfolder)
             template_files = self.get_file(path=template_path(template_directory_name, template.id),
                                            template_directory=template_directory_name)
-            if not template_files:
+            index_key = f"/{template.id}/{template.id}.html"
+            if index_key not in template_files:
                 raise NoIndexTemplateFound(template.id)
             self.write_files(files=template_files, target_directory=target_directory)
             logger.info(f"Loaded {template.id} template.")
@@ -185,5 +180,3 @@ class GCSFileStorage(PlatoFileStorage):
             new_key = blob.name[len(template_directory):]
             key_content_mapping[new_key] = blob.download_as_bytes()
         return key_content_mapping
-
-

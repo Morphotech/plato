@@ -70,15 +70,13 @@ class Renderer(ABC):
         Returns:
             str: HTML string for composed file.
         """
-        template_static_directory = f"{self.template_static_directory}/{self.template_model.id}/"
-        base_static_directory = f"{self.template_static_directory}/"
+        template_static_directory = f"{self.template_static_directory}/{self.template_model.id}/static/"
 
         jinja_template = self.jinja_env.get_template(
-            name=f"{self.template_model.id}/{self.template_model.id}"
-        )  # template id works for the file as well
+            name=f"{self.template_model.id}/{self.template_model.id}.html"
+        )  # template id works for the folder and file name as well
 
         return jinja_template.render(p=compose_data,
-                                     base_static=base_static_directory,
                                      template_static=template_static_directory)
 
     def render(self, compose_data: dict) -> io.BytesIO:

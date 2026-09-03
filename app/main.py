@@ -44,7 +44,7 @@ async def lifespan(api: FastAPI):
         api.state.file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)
 
     api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
-    api.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
+    api.state.template_static_directory = settings.TEMPLATE_DIRECTORY
     yield
     logger.info("Plato shutting down")
 
