@@ -3,7 +3,6 @@ import tempfile
 from contextlib import asynccontextmanager
 from starlette import status
 from math import isclose
-from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -75,8 +74,6 @@ def client_with_jinjaenv(db):
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db

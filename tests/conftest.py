@@ -21,6 +21,7 @@ from app.settings import get_settings
 
 settings = get_settings()
 settings.BUCKET_NAME = 'test_template_bucket'
+settings.TEMPLATE_DIRECTORY = str(Path(__file__).resolve().parent / "resources")
 
 @pytest.fixture(scope="session")
 def db():
@@ -59,8 +60,6 @@ def fastapi_client_s3_storage(db):
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -86,8 +85,6 @@ def fastapi_client_gcs_storage(db):
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -108,8 +105,6 @@ def fastapi_client_local_storage(db):
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
