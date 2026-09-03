@@ -17,7 +17,7 @@ configure_logging()
 
 from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
 from app.db.session import db_session
-from app.deps import get_db, get_jinja_env, get_template_static_directory
+from app.deps import get_db, get_jinja_env, get_template_directory
 from app.exceptions import UnsupportedMIMEType, PNGCompositionUnavailable, UnsupportedResizingException, \
     SinglePageUnsupportedException, TemplateNotFoundException, InvalidPageNumberException, \
     JSONSchemaVerificationErrorException
@@ -44,7 +44,7 @@ async def lifespan(api: FastAPI):
         api.state.file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)
 
     api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
-    api.state.template_static_directory = settings.TEMPLATE_DIRECTORY
+    api.state.template_directory = settings.TEMPLATE_DIRECTORY
     yield
     logger.info("Plato shutting down")
 
@@ -84,24 +84,24 @@ def templates(db: Annotated[Session, Depends(get_db)], tags: Annotated[List[str]
 @app.post("/template/{template_id}/compose", response_model=None)
 def compose_file(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
                  payload: Annotated[dict, Body(...)], jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
-                 template_static_directory: Annotated[str, Depends(get_template_static_directory)],
+                 template_directory: Annotated[str, Depends(get_template_directory)],
                  db: Annotated[Session, Depends(get_db)],
                  custom_accept: Annotated[str | None, Header(...)] = None) -> StreamingResponse:
-    return _compose(db, jinja_env, template_static_directory,
+    return _compose(db, jinja_env, template_directory,
                     lambda t: payload, template_id, "compose", compose_file_schema, custom_accept)
 
 
 @app.get("/template/{template_id}/example", response_model=None)
 def example_compose(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
                     jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
-                    template_static_directory: Annotated[str, Depends(get_template_static_directory)],
+                    template_directory: Annotated[str, Depends(get_template_directory)],
                     db: Annotated[Session, Depends(get_db)],
                     custom_accept: Annotated[str | None, Header(...)] = None) -> StreamingResponse:
-    return _compose(db, jinja_env, template_static_directory,
+    return _compose(db, jinja_env, template_directory,
                     lambda t: t.example_composition, template_id, "example", compose_file_schema, custom_accept)
 
 
-def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
+def _compose(db: Session, jinja_env: JinjaEnv, template_directory: str,
              compose_retrieval_function: Callable[[Template], dict], template_id: str, file_name: str,
              compose_schema: ComposeBaseSchema, custom_accept: str | None) -> StreamingResponse:
     accept_header = custom_accept or MIMETypeEnum.PDF_MIME.value
@@ -125,7 +125,7 @@ def _compose(db: Session, jinja_env: JinjaEnv, template_static_directory: str,
 
     try:
         compose_data = compose_retrieval_function(template_model)
-        composed_file = compose(template_model, compose_data, mime_type, jinja_env, template_static_directory,
+        composed_file = compose(template_model, compose_data, mime_type, jinja_env, template_directory,
                                 **compose_schema.model_dump(exclude_none=True))
         return StreamingResponse(composed_file, media_type=mime_type,
                                  headers={

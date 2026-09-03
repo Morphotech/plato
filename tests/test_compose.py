@@ -76,7 +76,7 @@ def client_with_jinjaenv(db):
                 auto_reload=True
             )
             current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources")
+            app.state.template_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db

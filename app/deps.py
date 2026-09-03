@@ -39,13 +39,13 @@ def get_jinja_env(request: Request) -> JinjaEnv:
     """
     return request.app.state.jinja_env
 
-def get_template_static_directory(request: Request) -> str:
+def get_template_directory(request: Request) -> str:
     """
-    Retrieves the static directory for templates from the request's application state.
+    Retrieves the base directory where templates are stored, from the request's application state.
 
     :param request: The FastAPI request object
     :type request: Request
 
-    :return: The static directory path for templates
+    :return: The template directory path
     """
-    return request.app.state.template_static_directory
+    return request.app.state.template_directory

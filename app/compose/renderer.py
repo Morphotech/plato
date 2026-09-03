@@ -55,10 +55,10 @@ class Renderer(ABC):
     """
     renderers: ClassVar[Dict[str, 'Renderer']] = dict()
 
-    def __init__(self, template_model: Template, jinja_env: JinjaEnv, template_static_directory: str):
+    def __init__(self, template_model: Template, jinja_env: JinjaEnv, template_directory: str):
         self.template_model = template_model
         self.jinja_env = jinja_env
-        self.template_static_directory = template_static_directory
+        self.template_directory = template_directory
 
     def compose_html(self, compose_data: dict) -> str:
         """
@@ -70,11 +70,11 @@ class Renderer(ABC):
         Returns:
             str: HTML string for composed file.
         """
-        template_static_directory = f"{self.template_static_directory}/{self.template_model.id}/static/"
+        template_static_directory = f"{self.template_directory}/{self.template_model.id}/static/"
 
         jinja_template = self.jinja_env.get_template(
             name=f"{self.template_model.id}/{self.template_model.id}.html"
-        )  # template id works for the folder and file name as well
+        )
 
         return jinja_template.render(p=compose_data,
                                      template_static=template_static_directory)
@@ -245,15 +245,15 @@ class PNGRenderer(Renderer):
         self._page = value
 
     def __init__(self, template_model: Template,
-                 jinja_env: JinjaEnv, 
-                 template_static_directory: str,
+                 jinja_env: JinjaEnv,
+                 template_directory: str,
                  height: int | None = None,
                  width: int | None = None,
                  page: int = 0):
         self.height = height
         self.width = width
         self.page = page
-        super().__init__(template_model, jinja_env, template_static_directory)
+        super().__init__(template_model, jinja_env, template_directory)
 
     def print(self, html_string: str) -> io.BytesIO:
         """
@@ -311,7 +311,7 @@ class HTMLRenderer(Renderer):
         return io.BytesIO(bytes(html_string, encoding="utf-8"))
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_static_directory: str,
+def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv, template_directory: str,
             *args, **kwargs) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
@@ -321,7 +321,7 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
         mime_type: The desired output MIME type
         compose_data: The dict with the data to fill the template
         jinja_env: The Jinja2 environment to be used for rendering the template
-        template_static_directory: The static directory for the template, used to load static files
+        template_directory: The base directory where templates are stored, used to load static files
         args: Additional arguments to be given to the specific renderer
         kwargs: Additional keyword arguments to be given to the specific renderer
 
@@ -334,6 +334,6 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
     """
     validate_schema(instance=compose_data, schema=template.schema)
     renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env,
-                                       template_static_directory=template_static_directory, *args, **kwargs)
+                                       template_directory=template_directory, *args, **kwargs)
 
     return renderer.render(compose_data)
