@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     IN_DOCKER: bool = False
 
+    LOG_LEVEL: str = "INFO"
+    FILE_LOG_LEVEL: str = "INFO"
+    LOG_DURATION_DAYS: int = 7
+
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     def assemble_db_connection(cls, v: str | None, values: ValidationInfo) -> str:
         return v or PostgresDsn.build(

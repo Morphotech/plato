@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from mimetypes import guess_extension
 from typing import Callable, List, Annotated
@@ -11,6 +12,9 @@ from jsonschema import ValidationError
 from sqlalchemy import ARRAY, String, cast as db_cast
 from sqlalchemy.orm import Session, Query as SqlQuery
 
+from app.log_config import configure_logging
+configure_logging()
+
 from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
 from app.db.session import db_session
 from app.deps import get_db, get_jinja_env, get_template_static_directory
@@ -18,6 +22,7 @@ from app.exceptions import UnsupportedMIMEType, PNGCompositionUnavailable, Unsup
     SinglePageUnsupportedException, TemplateNotFoundException, InvalidPageNumberException, \
     JSONSchemaVerificationErrorException
 from app.models.template import Template
+from app.request_logger_route import RequestLoggerRoute
 from app.schemas.compose import ComposeBaseSchema, ComposeSchema
 from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 from app.settings import get_settings
@@ -25,10 +30,14 @@ from app.util.setup_util import create_template_environment, initialize_file_sto
 
 ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(api: FastAPI):
     settings = get_settings()
+    logger.info(f"Plato starting up (storage={settings.STORAGE_TYPE}, template_directory={settings.TEMPLATE_DIRECTORY})")
+
     api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
 
     with db_session() as db:
@@ -37,9 +46,11 @@ async def lifespan(api: FastAPI):
     api.state.jinja_env = create_template_environment(settings.TEMPLATE_DIRECTORY)
     api.state.template_static_directory = f"{settings.TEMPLATE_DIRECTORY}/static"
     yield
+    logger.info("Plato shutting down")
 
 
 app = FastAPI(lifespan=lifespan)
+app.router.route_class = RequestLoggerRoute
 
 app.add_middleware(
     CORSMiddleware,

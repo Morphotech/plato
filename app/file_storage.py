@@ -1,3 +1,4 @@
+import logging
 import json
 import pathlib
 from abc import ABC
@@ -11,6 +12,9 @@ from sqlalchemy.orm import Session
 from app.models.template import Template
 from app.settings import get_settings
 from app.util.path_util import base_static_path, template_path
+
+
+logger = logging.getLogger(__name__)
 
 
 class StorageType(str, Enum):
@@ -86,8 +90,11 @@ class PlatoFileStorage(ABC):
             template_directory_name: Base directory
             db (Session): The database session to query templates from
         """
-        if type(self) == DiskFileStorage: return
+        if isinstance(self, DiskFileStorage):
+            logger.info("Using local storage; Skipping template loading.")
+            return
 
+        logger.info("Loading templates...")
         # get static files
         static_files = self.get_file(path=base_static_path(template_directory_name),
                                      template_directory=template_directory_name)
@@ -102,6 +109,9 @@ class PlatoFileStorage(ABC):
             if not template_files:
                 raise NoIndexTemplateFound(template.id)
             self.write_files(files=template_files, target_directory=target_directory)
+            logger.info(f"Loaded {template.id} template.")
+
+        logger.info("Finished loading templates.")
 
 
 class DiskFileStorage(PlatoFileStorage):
