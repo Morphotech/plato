@@ -13,12 +13,6 @@ from sqlalchemy import ARRAY, String, cast as db_cast
 from sqlalchemy.orm import Session, Query as SqlQuery
 
 from app.log_config import configure_logging
-
-# Must run before any other first-party module is imported, since some of
-# them execute side-effecting code at import time (e.g. app.db.session
-# creates the SQLAlchemy engine). Guarantees identical "app" logger output
-# regardless of launcher (Docker's `fastapi run`, local `fastapi dev`,
-# PyCharm's FastAPI run configuration).
 configure_logging()
 
 from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose

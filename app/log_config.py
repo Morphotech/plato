@@ -53,7 +53,7 @@ def _build_log_config() -> Dict[str, Any]:
 def configure_logging() -> None:
     """
     Configure the "app" logger with a console handler (timestamp + level + message) and a rotating JSON file handler.
-    Must be called once, as early as possible, in every process entry point (app/main.py, app/cli.py) so log output is
-    identical regardless of launcher (Docker, `fastapi dev`, PyCharm).
+    Must be called once, as early as possible, in every process entry point (app/main.py, app/cli.py, etc) so log output
+    is identical regardless of launcher (Docker, `fastapi dev`, PyCharm).
     """
     logging.config.dictConfig(_build_log_config())
