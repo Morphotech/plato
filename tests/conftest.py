@@ -1,27 +1,26 @@
 import tempfile
-from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest import mock
-from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-from google.cloud import storage
-from google.cloud.storage import Client
 from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from testcontainers.postgres import PostgresContainer
 
 from app.db.base_class import Base
-from app.deps import get_db
-from app.file_storage import DiskFileStorage, S3FileStorage, GCSFileStorage
-from app.main import app
+from app.deps import get_db, get_jinja_env
+from app.fastapi_app import get_app
+from app.file_storage import DiskFileStorage, StorageType
 from app.settings import get_settings
 
 settings = get_settings()
+settings.STORAGE_TYPE = StorageType.DISK
 settings.BUCKET_NAME = 'test_template_bucket'
 settings.TEMPLATE_DIRECTORY = str(Path(__file__).resolve().parent / "resources")
+settings.CREDENTIALS_DIR = str(Path(__file__).resolve().parent / "resources")
+
 
 @pytest.fixture(scope="session")
 def db():
@@ -47,67 +46,18 @@ def _setup_test_db(database_uri):
 
 
 @pytest.fixture(scope='class')
-def fastapi_client_s3_storage(db):
-    @asynccontextmanager
-    async def mock_lifespan(app):
-        with mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
-            mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
-                                                     "aws_secret_access_key": "test_secret_key",
-                                                     "region_name": "test_region"}
-            app.state.file_storage = S3FileStorage(settings.BUCKET_NAME)
-            app.state.jinja_env = JinjaEnv(
-                loader=DictLoader({}),
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            yield
-
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
-
-    with TestClient(app) as client:
-        yield client
-
-
-@pytest.fixture(scope='class')
-def fastapi_client_gcs_storage(db):
-    @asynccontextmanager
-    async def mock_lifespan(app):
-        with mock.patch.object(Client, "from_service_account_json") as mock_init_client:
-            gcs_client = MagicMock(spec=Client)
-            bucket = MagicMock(spec=storage.Bucket)
-            gcs_client.bucket.return_value = bucket
-            mock_init_client.return_value = gcs_client
-            app.state.mocked_bucket = bucket
-            app.state.file_storage = GCSFileStorage(settings.BUCKET_NAME)
-            app.state.jinja_env = JinjaEnv(
-                loader=DictLoader({}),
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            yield
-
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
-
-    with TestClient(app) as client:
-        yield client
-
-
-@pytest.fixture(scope='class')
 def fastapi_client_local_storage(db):
-    @asynccontextmanager
-    async def mock_lifespan(app):
-        app.state.file_storage = DiskFileStorage()
-        app.state.jinja_env = JinjaEnv(
+    with mock.patch("app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage()), \
+         mock.patch("app.fastapi_app.db_session", return_value=db):
+        jinja_env = JinjaEnv(
             loader=DictLoader({}),
             autoescape=select_autoescape(["html", "xml"]),
             auto_reload=True
         )
-        yield
 
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
+        app = get_app()
+        app.dependency_overrides[get_db] = lambda: db
+        app.dependency_overrides[get_jinja_env] = lambda: jinja_env
 
-    with TestClient(app) as client:
-        yield client
+        with TestClient(app) as client:
+            yield client
