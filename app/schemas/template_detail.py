@@ -23,4 +23,3 @@ class MIMETypeEnum(str, Enum):
     HTML_MIME = "text/html"
     PNG_MIME = "image/png"
     OCTET_STREAM = "application/octet-stream"
-

@@ -14,34 +14,29 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.13"
 
-fastapi = { extras = ["standard"], version = "^0.115.13" }
-pydantic-settings = "^2.10.0"
+fastapi = { extras = ["standard"], version = "^0.141.1" }
+pydantic-settings = "^2.15.0"
+python-json-logger = "^3.2"
 gunicorn = "^23.0.0"
-psycopg2-binary = "^2.9.10"
-alembic = "^1.16.2"
-jsonschema = "^4.24.0"
-# S3 and GCS
-smart-open = { version = "6.4.0", extras = ["aws", "gcs"] }
-
-# Database
-sqlalchemy = { version = "^2.0", extras = ["postgresql_psycopg2binary"] }
-
-#HTTP
+sqlalchemy = { version = "^2.0.52", extras = ["postgresql_psycopg2binary"] }
+alembic = "1.19.1"
+jsonschema = "^4.26.0"
+smart-open = { version = "8.0.1", extras = ["s3", "gcs"] }
 accept-types = "0.4.1"
 
 # Templating
-WeasyPrint = "66"
-qrcode = { version = "6.1", extras = ["pil"] }
-babel = "^2.9.1"
-num2words = "0.5.10"
+WeasyPrint = "69.0"
+qrcode = { version = "8.2", extras = ["pil"] }
+babel = "^2.18.0"
+num2words = "0.5.14"
 jmespath = "^1.1.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "~8.4.1"
-coverage = "~7.4.4"
-testcontainers = "^4.10.0"
-blinker = "1.4"
-pypdf = "^5.8.0"
+pytest = "~9.1.1"
+coverage = "~7.16.0"
+testcontainers = "^4.15.0"
+blinker = "1.9.0"
+pypdf = "^6.16.2"
 
 [build-system]
 requires = ["poetry>=1.2"]

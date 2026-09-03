@@ -128,7 +128,7 @@ class S3FileStorage(PlatoFileStorage):
          A dictionary with key as file's relative location on s3-bucket and value as file's content
         """
         key_content_mapping: dict = {}
-        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path, **self.aws_credentials_dict):
+        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path, session_kwargs=self.aws_credentials_dict):
             if key[-1] == '/' or not content:
                 # Is a directory
                 continue
