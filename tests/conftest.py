@@ -60,7 +60,7 @@ def fastapi_client_s3_storage(db):
                 auto_reload=True
             )
             current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
+            app.state.template_static_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -87,7 +87,7 @@ def fastapi_client_gcs_storage(db):
                 auto_reload=True
             )
             current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
+            app.state.template_static_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -109,7 +109,7 @@ def fastapi_client_local_storage(db):
                 auto_reload=True
             )
             current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
+            app.state.template_static_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db

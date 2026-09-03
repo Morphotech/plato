@@ -14,10 +14,10 @@ from starlette.testclient import TestClient
 BASE_DIR = 'templating'
 
 def get_local_static_file_path(template_id: str, file_name: str):
-    return f"static/{template_id}/{file_name}"
+    return f"{template_id}/static/{file_name}"
 
 def get_local_template_file_path(template_id: str):
-    return f"templates/{template_id}/{template_id}"
+    return f"{template_id}/{template_id}.html"
 
 def create_child_temp_folder(main_directory: str) -> str:
     template_dir_name = f"{main_directory}/abc"
@@ -39,9 +39,9 @@ def populate_db(fastapi_client_s3_storage, db: Session):
 
 class TestFileStorage:
     def test_file_storage_write_files(self, fastapi_client_local_storage: TestClient):
-        files = {"templating/templates/0/0": b"file content",
-                 "templating/static/0/abc_1": b"static content",
-                 "templating/static/0/abc_2": b"static content"}
+        files = {"templating/0/0.html": b"file content",
+                 "templating/0/static/abc_1": b"static content",
+                 "templating/0/static/abc_2": b"static content"}
 
         with TemporaryDirectory() as temp:
             # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
@@ -93,9 +93,9 @@ class TestFileStorage:
     @pytest.mark.usefixtures("populate_db")
     @mock.patch.object(S3FileStorage, "get_file")
     def test_file_storage_load_templates(self, mock_s3_get_file, fastapi_client_s3_storage: TestClient, db: Session):
-        mock_s3_get_file.side_effect = [{"templating/static/0/abc_1": b"static content",
-                                         "templating/static/0/abc_2": b"static content"},
-                                        {"templating/templates/0/0": b"file content"}]
+        mock_s3_get_file.return_value = {"/0/0.html": b"file content",
+                                         "/0/static/abc_1": b"static content",
+                                         "/0/static/abc_2": b"static content"}
 
         with TemporaryDirectory() as temp:
             # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
@@ -104,27 +104,23 @@ class TestFileStorage:
             s3_file_storage = fastapi_client_s3_storage.app.state.file_storage
             s3_file_storage.load_templates(template_dir, BASE_DIR, db)
 
-            static_file_1 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
-            static_file_2 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
-            template_file_1 = f'{template_dir}/templating/{get_local_template_file_path(template_id="0")}'
+            static_file_1 = f'{template_dir}/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
+            static_file_2 = f'{template_dir}/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
+            template_file_1 = f'{template_dir}/{get_local_template_file_path(template_id="0")}'
 
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
 
-        calls = [call(path=f"{BASE_DIR}/static", template_directory=BASE_DIR),
-                 call(path=f"{BASE_DIR}/templates/0/0", template_directory=BASE_DIR)]
-        mock_s3_get_file.assert_has_calls(calls, any_order=True)
-        # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
-        # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
+        mock_s3_get_file.assert_called_once_with(path=f"{BASE_DIR}/0", template_directory=BASE_DIR)
 
     @pytest.mark.usefixtures("populate_db")
     @mock.patch.object(S3FileStorage, "get_file")
     def test_file_storage_load_templates_no_template_file_found(self, mock_s3_get_file,
                                                                 fastapi_client_s3_storage: TestClient, db: Session):
-        mock_s3_get_file.side_effect = [{"templating/static/0/abc_1": b"static content",
-                                         "templating/static/0/abc_2": b"static content"},
-                                        {}]
+        # folder has static assets but is missing the {id}.html index file
+        mock_s3_get_file.return_value = {"/0/static/abc_1": b"static content",
+                                         "/0/static/abc_2": b"static content"}
 
         with TemporaryDirectory() as temp:
             # as we cannot directly delete any folder created by TemporaryDirectory, we create another temporary one inside it
@@ -134,19 +130,10 @@ class TestFileStorage:
             with pytest.raises(NoIndexTemplateFound):
                 s3_file_storage.load_templates(template_dir, BASE_DIR, db)
 
-            static_file_1 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_1", template_id="0")}'
-            static_file_2 = f'{template_dir}/templating/{get_local_static_file_path(file_name="abc_2", template_id="0")}'
-            template_file_1 = f'{template_dir}/templating/{get_local_template_file_path(template_id="0")}'
-
-            assert pathlib.Path(static_file_1).is_file()
-            assert pathlib.Path(static_file_2).is_file()
+            template_file_1 = f'{template_dir}/{get_local_template_file_path(template_id="0")}'
             assert not pathlib.Path(template_file_1).is_file()
 
-        calls = [call(path=f"{BASE_DIR}/static", template_directory=BASE_DIR),
-                 call(path=f"{BASE_DIR}/templates/0/0", template_directory=BASE_DIR)]
-        mock_s3_get_file.assert_has_calls(calls, any_order=True)
-        # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
-        # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
+        mock_s3_get_file.assert_called_once_with(path=f"{BASE_DIR}/0", template_directory=BASE_DIR)
 
     @mock.patch('app.file_storage.s3.iter_bucket')
     def test_file_storage_get_file_s3(self, mock_iter_bucket, fastapi_client_s3_storage: TestClient):
@@ -168,7 +155,6 @@ class TestFileStorage:
         mock_iter_bucket.assert_has_calls(calls, any_order=True)
         # when debugging, the mocked iterator calls __len__() for some reason. this is why any_order is set to True
         # to, at least, guarantee that the calls we want actually are present in mock_iter_bucket.mock_calls
-
 
     def test_file_storage_get_file_gcs(self, fastapi_client_gcs_storage: TestClient):
         gcs_file_storage = fastapi_client_gcs_storage.app.state.file_storage
@@ -194,4 +180,3 @@ class TestFileStorage:
         calls = [call(prefix=f"{BASE_DIR}/static"),
                  call(prefix=f"{BASE_DIR}/templates")]
         bucket.list_blobs.assert_has_calls(calls)
-

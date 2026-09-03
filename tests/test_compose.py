@@ -31,10 +31,10 @@ PNG_IMAGE_NAME = "balloons.png"
 def client_with_jinjaenv(db):
     template_loader = DictLoader({})
 
-    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}"
+    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}.html"
     template_loader.mapping[plain_text_jinja_id] = "{{ p.plain }}"
 
-    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}"
+    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[png_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -45,7 +45,7 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}"
+    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[no_image_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -56,7 +56,7 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}"
+    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}.html"
     template_loader.mapping[qr_code_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -76,7 +76,7 @@ def client_with_jinjaenv(db):
                 auto_reload=True
             )
             current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
+            app.state.template_static_directory = str(current_folder / "resources")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
