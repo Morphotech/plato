@@ -159,7 +159,18 @@ class GCSFileStorage(PlatoFileStorage):
     def __init__(self, data_directory: str, bucket_name: str):
         super().__init__(data_directory)
         self.bucket_name = bucket_name
-        self.gcs_client = Client.from_service_account_json(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
+        self.gcs_client = self.get_gcs_client(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
+
+    @staticmethod
+    def get_gcs_client(path_to_file: str) -> Client:
+        try:
+            return Client.from_service_account_json(path_to_file)
+        except FileNotFoundError as exc:
+            raise FileStorageError(f"GCS service account key file not found at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON file containing GCS service account credentials.") from exc
+        except json.JSONDecodeError as exc:
+            raise FileStorageError(f"Invalid JSON in GCS service account key file at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON object containing GCS service account credentials.") from exc
 
     def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
         """

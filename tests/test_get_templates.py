@@ -87,4 +87,3 @@ class TestGetTemplates:
         response = fastapi_client_local_storage.get(self.GET_TEMPLATES_ENDPOINT, params=tags)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == 1
-

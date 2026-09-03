@@ -1,21 +1,20 @@
 import io
 import tempfile
-from contextlib import asynccontextmanager
 from starlette import status
 from math import isclose
+from unittest import mock
 
 import pytest
 from PIL import Image
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
-from app.deps import get_db
+from app.deps import get_db, get_jinja_env
+from app.fastapi_app import get_app
 from app.file_storage import DiskFileStorage
-from app.main import app
 from app.models.template import Template
 from app.schemas.template_detail import MIMETypeEnum
 
@@ -65,22 +64,19 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    @asynccontextmanager
-    async def mock_lifespan(app: FastAPI):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(
-                loader=template_loader,
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            yield
+    with tempfile.TemporaryDirectory() as file_dir, mock.patch("app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage(file_dir)):
+        jinja_env = JinjaEnv(
+            loader=template_loader,
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=True
+        )
 
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
+        app = get_app()
+        app.dependency_overrides[get_db] = lambda: db
+        app.dependency_overrides[get_jinja_env] = lambda: jinja_env
 
-    with TestClient(app) as client:
-        yield client
+        with TestClient(app) as client:
+            yield client
 
 
 @pytest.fixture(scope="class")
