@@ -28,7 +28,7 @@ def create_template_environment(template_directory_path: str) -> JinjaEnv:
         JinjaEnv: Jinja2 Environment with templating
     """
     env = JinjaEnv(
-        loader=FileSystemLoader(f"{template_directory_path}/templates"),
+        loader=FileSystemLoader(template_directory_path),
         autoescape=select_autoescape(["html", "xml"])
     )
     env.filters.update({filter_.__name__: filter_ for filter_ in FILTERS})
