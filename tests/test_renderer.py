@@ -22,8 +22,9 @@ class TestRenderer:
         template = Template(id_="test_template", schema={}, type_="text/html",
                             tags=[], metadata={}, example_composition={})
 
+        jinja_env = _make_jinja_env()
         with pytest.raises(RendererNotFound):
-            compose(template, {}, "application/unsupported-mime-type", _make_jinja_env())
+            compose(template, {}, "application/unsupported-mime-type", jinja_env)
 
     def test_to_html(self):
         assert to_html("<p>hello</p>") == b"<p>hello</p>"
