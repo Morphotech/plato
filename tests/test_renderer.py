@@ -59,5 +59,6 @@ class TestRenderer:
         template = template = Template(id_="test_template", schema=schema, type_="text/html",
                                        tags=[], metadata={}, example_composition={})
 
+        jinja_env = _make_jinja_env()
         with pytest.raises(ValidationError):
-            compose(template, {}, mime_type, _make_jinja_env())
+            compose(template, {}, mime_type, jinja_env)
