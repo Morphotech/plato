@@ -1,11 +1,9 @@
 import io
 import tempfile
 from starlette import status
-from math import isclose
 from unittest import mock
 
 import pytest
-from PIL import Image
 from fastapi.testclient import TestClient
 from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
@@ -164,67 +162,6 @@ class TestCompose:
         pdf_reader = PdfReader(io.BytesIO(response.content))
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
-
-    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
-    def test_resize_ok(self, client_with_jinjaenv):
-        error = 1
-        expected_resize = 200
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.content is not None
-        with Image.open(io.BytesIO(response.content)) as img:
-            width, height = img.size
-        expected_resolution = height / width
-        assert height != expected_resize
-        assert width != expected_resize
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?width={expected_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-
-        def maintains_aspect_ratio(response):
-            assert response.status_code == status.HTTP_200_OK
-            assert response.content is not None
-            with Image.open(io.BytesIO(response.content)) as img_:
-                width_, height_ = img_.size
-            real_resolution = height_ / width_
-            assert isclose(expected_resolution, real_resolution, abs_tol=error / 10)
-            return width_, height_
-
-        real_width, _ = maintains_aspect_ratio(response)
-        assert isclose(expected_resize, real_width, abs_tol=error)
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?height={expected_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-        _, real_height = maintains_aspect_ratio(response)
-        assert isclose(expected_resize, real_height, abs_tol=error)
-
-    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
-    def test_resize_nok(self, client_with_jinjaenv):
-        intended_resize = 200
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
-            f"?width={intended_resize}&height={intended_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"detail": "Specifying both width and height compromises the template's aspect ratio"}
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
-            f"?width={intended_resize}",
-            headers={"custom-accept": MIMETypeEnum.PDF_MIME.value}
-        )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {MIMETypeEnum.PDF_MIME.value}"}
 
     def test_unsupported_mimetype(self, client_with_jinjaenv):
         jpeg_mimetype = "image/jpeg"
