@@ -9,14 +9,14 @@ from jsonschema import ValidationError
 from sqlalchemy import ARRAY, String, cast as db_cast
 from sqlalchemy.orm import Session, Query as SqlQuery
 
-from app.compose.renderer import Renderer, RendererNotFound, compose
+from app.compose.renderer import CONVERTERS, RendererNotFound, compose
 from app.deps import get_db, get_jinja_env
 from app.exceptions import UnsupportedMIMEType, TemplateNotFoundException, JSONSchemaVerificationErrorException
 from app.models.template import Template
 from app.request_logger_route import RequestLoggerRoute
 from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 
-ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
+ALL_AVAILABLE_MIME_TYPES = list(CONVERTERS.keys())
 
 router = APIRouter(prefix="/templates", route_class=RequestLoggerRoute)
 

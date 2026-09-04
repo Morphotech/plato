@@ -1,12 +1,9 @@
-import io
-
 import pytest
 from jinja2 import DictLoader, Environment as JinjaEnv, select_autoescape
 from jsonschema import ValidationError
 
-from app.compose.renderer import HTMLRenderer, PdfRenderer, Renderer, RendererNotFound, compose
+from app.compose.renderer import CONVERTERS, RendererNotFound, compose, to_html
 from app.models.template import Template
-from app.schemas.template_detail import MIMETypeEnum
 
 
 def _make_jinja_env():
@@ -14,42 +11,22 @@ def _make_jinja_env():
 
 
 class TestRenderer:
-    def test_build_renderer_renderer_not_found(self):
+    @pytest.mark.parametrize("mime_type", [
+        "application/pdf",
+        "text/html",
+    ])
+    def test_converters_registered(self, mime_type):
+        assert mime_type in CONVERTERS
+
+    def test_compose_renderer_not_found(self):
         template = Template(id_="test_template", schema={}, type_="text/html",
                             tags=[], metadata={}, example_composition={})
 
         with pytest.raises(RendererNotFound):
-            Renderer.build_renderer("application/unsupported-mime-type",
-                                    template_model=template, jinja_env=_make_jinja_env())
+            compose(template, {}, "application/unsupported-mime-type", _make_jinja_env())
 
-    @pytest.mark.parametrize("mime_type, renderer_class", [
-        ("application/pdf", PdfRenderer),
-        ("text/html", HTMLRenderer),
-    ])
-    def test_build_renderer(self, mime_type, renderer_class):
-        template = Template(id_="test_template", schema={}, type_="text/html",
-                            tags=[], metadata={}, example_composition={})
-        renderer = Renderer.build_renderer(mime_type,
-                                           template_model=template, jinja_env=_make_jinja_env())
-
-        assert isinstance(renderer, renderer_class)
-
-    @pytest.mark.parametrize("extension, renderer_class", [
-        (".pdf", PdfRenderer),
-        (".html", HTMLRenderer),
-    ])
-    def test_file_extension_pdf(self, extension, renderer_class):
-        assert renderer_class.file_extension() == extension
-
-    def test_print(self):
-        template = Template(id_="test_template", schema={}, type_="text/html",
-                            tags=[], metadata={}, example_composition={})
-        renderer = HTMLRenderer(template_model=template, jinja_env=_make_jinja_env())
-
-        result = renderer.print("<p>hello</p>")
-
-        assert isinstance(result, io.BytesIO)
-        assert result.read() == b"<p>hello</p>"
+    def test_to_html(self):
+        assert to_html("<p>hello</p>") == b"<p>hello</p>"
 
     @pytest.mark.parametrize("mime_type", [
         "application/pdf",
