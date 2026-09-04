@@ -4,7 +4,7 @@ import pytest
 from jinja2 import DictLoader, Environment as JinjaEnv, select_autoescape
 from jsonschema import ValidationError
 
-from app.compose.renderer import HTMLRenderer, PdfRenderer, Renderer, RendererNotFound, compose, PNGRenderer
+from app.compose.renderer import HTMLRenderer, PdfRenderer, Renderer, RendererNotFound, compose
 from app.models.template import Template
 from app.schemas.template_detail import MIMETypeEnum
 
@@ -15,13 +15,16 @@ def _make_jinja_env():
 
 class TestRenderer:
     def test_build_renderer_renderer_not_found(self):
+        template = Template(id_="test_template", schema={}, type_="text/html",
+                            tags=[], metadata={}, example_composition={})
+
         with pytest.raises(RendererNotFound):
-            Renderer.build_renderer("application/unsupported-mime-type")
+            Renderer.build_renderer("application/unsupported-mime-type",
+                                    template_model=template, jinja_env=_make_jinja_env())
 
     @pytest.mark.parametrize("mime_type, renderer_class", [
         ("application/pdf", PdfRenderer),
         ("text/html", HTMLRenderer),
-        ("image/png", PNGRenderer),
     ])
     def test_build_renderer(self, mime_type, renderer_class):
         template = Template(id_="test_template", schema={}, type_="text/html",
@@ -34,7 +37,6 @@ class TestRenderer:
     @pytest.mark.parametrize("extension, renderer_class", [
         (".pdf", PdfRenderer),
         (".html", HTMLRenderer),
-        (".png", PNGRenderer),
     ])
     def test_file_extension_pdf(self, extension, renderer_class):
         assert renderer_class.file_extension() == extension
@@ -52,7 +54,6 @@ class TestRenderer:
     @pytest.mark.parametrize("mime_type", [
         "application/pdf",
         "text/html",
-        "image/png",
     ])
     def test_compose_invalid_data(self, mime_type):
         schema = {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}}

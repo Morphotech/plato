@@ -22,18 +22,6 @@ class RendererNotFound(Exception):
     ...
 
 
-class InvalidPageNumber(ValueError):
-    """
-    Exception to be raised when the given page number is invalid, either by being a negative number or by
-    being higher than the number of pages on the template
-    """
-    message: str
-
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__()
-
-
 class Renderer(ABC):
     """
     Renderer is a factory for every Renderer subclass.
@@ -116,13 +104,14 @@ class Renderer(ABC):
         return guess_extension(cls.mime_type)
 
     @classmethod
-    def build_renderer(cls, mime_type: str, *args, **kwargs) -> Type['Renderer'] | None:
+    def build_renderer(cls, mime_type: str, template_model: Template, jinja_env: JinjaEnv) -> Type['Renderer'] | None:
         """
         Factory method for 'Renderer' subclasses registered with @Renderer.renderer()
 
         Args:
             mime_type: the desired renderer output as a MIME type. e.g 'application/PDF'
-            *args: the arguments to be passed to the specific constructor, by default same as Renderer.__init__.
+            template_model: the Template to be used in the composition
+            jinja_env: the Jinja2 environment to be used for rendering the template
         Raises:
             RendererNotFound: When there is no Renderer for the given mime_type
         Returns:
@@ -133,7 +122,7 @@ class Renderer(ABC):
             raise RendererNotFound(mime_type)
         sub_renderer = cls.renderers.get(mime_type)
 
-        return sub_renderer(*args, **kwargs)
+        return sub_renderer(template_model=template_model, jinja_env=jinja_env)
 
     @classmethod
     def renderer(cls):
@@ -204,92 +193,6 @@ class PdfRenderer(Renderer):
 
 
 @Renderer.renderer()
-class PNGRenderer(Renderer):
-    """
-    PNG Renderer which uses weasyprint to generate PNG documents.
-    """
-
-    mime_type = MIMETypeEnum.PNG_MIME.value
-    _width: int | None = None
-    _height: int | None = None
-    _page: int = 0
-
-    @property
-    def height(self):
-        return self._height
-
-    @height.setter
-    def height(self, value):
-        if self.width is not None and value is not None:
-            raise ValueError("Unable to use both height and width in order to maintain aspect ratio")
-        self._height = value
-
-    @property
-    def width(self):
-        return self._width
-
-    @width.setter
-    def width(self, value):
-        if self.height is not None and value is not None:
-            raise ValueError("Unable to use both height and width in order to maintain aspect ratio")
-        self._width = value
-
-    @property
-    def page(self):
-        return self._page
-
-    @page.setter
-    def page(self, value):
-        if value < 0:
-            raise InvalidPageNumber(f"A negative number is not allowed as a page value: {value}")
-        self._page = value
-
-    def __init__(self, template_model: Template,
-                 jinja_env: JinjaEnv,
-                 height: int | None = None,
-                 width: int | None = None,
-                 page: int = 0):
-        self.height = height
-        self.width = width
-        self.page = page
-        super().__init__(template_model, jinja_env)
-
-    def print(self, html_string: str) -> io.BytesIO:
-        """
-        Prints the HTML string as a PNG image using WeasyPrint.
-
-        Args:
-            html_string: The HTML string to be printed as PNG.
-
-        Raises:
-            InvalidPageNumber: If the requested page number is invalid (negative or exceeds the number of pages).
-
-        Returns:
-            io.BytesIO: A file stream with the PNG image.
-        """
-
-        with tempfile.NamedTemporaryFile() as target_file_html:
-            html = HTML(string=html_string)
-            weasy_doc = html.render(enable_hinting=True)
-
-            if self.page >= len(weasy_doc.pages):
-                raise InvalidPageNumber(f"Page number ({self.page}) is larger than the maximum page number ({len(weasy_doc.pages)-1})")
-
-            page_to_print = weasy_doc.pages[self.page]   # Print only the requested page
-            resolution_multiplier = 1
-
-            if self.height is not None:
-                resolution_multiplier = self.height / page_to_print.height
-            elif self.width is not None:
-                resolution_multiplier = self.width / page_to_print.width
-
-            # 96 is the default resolution provided by weasyprint to maintain aspect ratio
-            weasy_doc.copy([page_to_print]).write_png(target=target_file_html.name, resolution=resolution_multiplier * 96)
-            with open(target_file_html.name, mode='rb') as temp_file_stream:
-                return io.BytesIO(temp_file_stream.read())
-
-
-@Renderer.renderer()
 class HTMLRenderer(Renderer):
     """
     HTML Renderer which uses does nothing but return the plain HTML.
@@ -310,8 +213,7 @@ class HTMLRenderer(Renderer):
         return io.BytesIO(bytes(html_string, encoding="utf-8"))
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv,
-            *args, **kwargs) -> io.BytesIO:
+def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
 
@@ -320,8 +222,6 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
         mime_type: The desired output MIME type
         compose_data: The dict with the data to fill the template
         jinja_env: The Jinja2 environment to be used for rendering the template
-        args: Additional arguments to be given to the specific renderer
-        kwargs: Additional keyword arguments to be given to the specific renderer
 
     Raises:
         jsonschema.exceptions.ValidationError: When the compose_data is not valid for a given template
@@ -331,7 +231,6 @@ def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: J
         io.BytesIO: The Byte stream for the composed file.
     """
     validate_schema(instance=compose_data, schema=template.schema)
-    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env,
-                                       *args, **kwargs)
+    renderer = Renderer.build_renderer(mime_type, template_model=template, jinja_env=jinja_env)
 
     return renderer.render(compose_data)

@@ -21,5 +21,4 @@ class TemplateDetailSchema(BaseModel):
 class MIMETypeEnum(str, Enum):
     PDF_MIME = "application/pdf"
     HTML_MIME = "text/html"
-    PNG_MIME = "image/png"
     OCTET_STREAM = "application/octet-stream"
