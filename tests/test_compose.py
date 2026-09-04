@@ -64,7 +64,8 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    with tempfile.TemporaryDirectory() as file_dir, mock.patch("app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage(file_dir)):
+    with (tempfile.TemporaryDirectory() as file_dir,
+          mock.patch("app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage(file_dir))):
         jinja_env = JinjaEnv(
             loader=template_loader,
             autoescape=select_autoescape(["html", "xml"]),

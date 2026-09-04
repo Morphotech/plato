@@ -5,9 +5,8 @@ from jinja2 import Environment as JinjaEnv
 from sqlalchemy.orm import Session
 
 from app.db.session import db_session
-from app.file_storage import PlatoFileStorage
 from app.settings import get_settings
-from app.util.setup_util import create_template_environment, initialize_file_storage
+from app.util.setup_util import create_template_environment
 
 
 def get_db() -> Generator[Session, None, None]:
