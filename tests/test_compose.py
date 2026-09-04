@@ -122,8 +122,8 @@ def template_test_examples(client_with_jinjaenv: TestClient, db: Session):
 
 @pytest.mark.usefixtures("template_test_examples")
 class TestCompose:
-    COMPOSE_ENDPOINT = "/template/{0}/compose"
-    EXAMPLE_COMPOSE_ENDPOINT = "/template/{0}/example"
+    COMPOSE_ENDPOINT = "/templates/{0}/compose"
+    EXAMPLE_COMPOSE_ENDPOINT = "/templates/{0}/example"
 
     def test_compose_plain_ok(self, client_with_jinjaenv: TestClient):
         expected_text = "This is some plain text"

@@ -21,10 +21,10 @@ from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 
 ALL_AVAILABLE_MIME_TYPES = list(Renderer.renderers.keys())
 
-router = APIRouter(route_class=RequestLoggerRoute)
+router = APIRouter(prefix="/templates", route_class=RequestLoggerRoute)
 
 
-@router.get("/templates/{template_id}", response_model=TemplateDetailSchema)
+@router.get("/{template_id}", response_model=TemplateDetailSchema)
 def template_by_id(template_id: str, db: Annotated[Session, Depends(get_db)]) -> Template:
 
     template = db.query(Template).filter_by(id=template_id).one_or_none()
@@ -34,7 +34,7 @@ def template_by_id(template_id: str, db: Annotated[Session, Depends(get_db)]) ->
     return template
 
 
-@router.get("/templates", response_model=List[TemplateDetailSchema])
+@router.get("", response_model=List[TemplateDetailSchema])
 def templates(db: Annotated[Session, Depends(get_db)], tags: Annotated[List[str] | None, Query(...)] = None) -> List[Template]:
     template_query: SqlQuery = db.query(Template)
 
@@ -44,7 +44,7 @@ def templates(db: Annotated[Session, Depends(get_db)], tags: Annotated[List[str]
     return template_query.all()
 
 
-@router.post("/template/{template_id}/compose", response_model=None)
+@router.post("/{template_id}/compose", response_model=None)
 def compose_file(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
                  payload: Annotated[dict, Body(...)], jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
                  db: Annotated[Session, Depends(get_db)],
@@ -53,7 +53,7 @@ def compose_file(template_id: str, compose_file_schema: Annotated[ComposeSchema,
                     lambda t: payload, template_id, "compose", compose_file_schema, custom_accept)
 
 
-@router.get("/template/{template_id}/example", response_model=None)
+@router.get("/{template_id}/example", response_model=None)
 def example_compose(template_id: str, compose_file_schema: Annotated[ComposeSchema, Query(...)],
                     jinja_env: Annotated[JinjaEnv, Depends(get_jinja_env)],
                     db: Annotated[Session, Depends(get_db)],
