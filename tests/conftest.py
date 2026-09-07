@@ -1,19 +1,17 @@
-import tempfile
 from pathlib import Path
 from unittest import mock
 
 import pytest
-from fastapi.testclient import TestClient
-from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from testcontainers.postgres import PostgresContainer
-
 from app.db.base_class import Base
 from app.deps import get_db, get_jinja_env
 from app.fastapi_app import get_app
 from app.file_storage import DiskFileStorage, StorageType
 from app.settings import get_settings
+from fastapi.testclient import TestClient
+from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from testcontainers.postgres import PostgresContainer
 
 settings = get_settings()
 settings.STORAGE_TYPE = StorageType.DISK

@@ -1,10 +1,8 @@
 import pytest
+from app.compose.renderer import CONVERTERS, RendererNotFound, compose, to_html
+from app.models.template import Template
 from jinja2 import DictLoader, Environment as JinjaEnv, select_autoescape
 from jsonschema import ValidationError
-
-from app.compose.renderer import CONVERTERS, RendererNotFound, compose, to_html
-from app.compose.renderer import HTMLRenderer, PdfRenderer, Renderer, RendererNotFound, compose, PNGRenderer
-from app.models.template import Template
 
 
 def _make_jinja_env():

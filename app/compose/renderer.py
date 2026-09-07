@@ -3,14 +3,13 @@ import tempfile
 from tempfile import TemporaryDirectory
 from typing import Callable, Dict
 
-from weasyprint import HTML
-from jsonschema import validate as validate_schema
-from jinja2 import Environment as JinjaEnv
-
 from app.compose.qr import render_qr_codes
 from app.models.template import Template
 from app.schemas.template_detail import MIMETypeEnum
 from app.settings import get_settings
+from jinja2 import Environment as JinjaEnv
+from jsonschema import validate as validate_schema
+from weasyprint import HTML
 
 
 class RendererNotFound(Exception):

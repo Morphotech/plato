@@ -2,21 +2,18 @@ from mimetypes import guess_extension
 from typing import Callable, List, Annotated
 
 from accept_types import get_best_match
+from app.compose.renderer import CONVERTERS, RendererNotFound, compose
+from app.deps import get_db, get_jinja_env
+from app.exceptions import UnsupportedMIMEType, TemplateNotFoundException, JSONSchemaVerificationErrorException
+from app.models.template import Template
+from app.request_logger_route import RequestLoggerRoute
+from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 from fastapi import APIRouter, Body, Depends, Query, Header
 from fastapi.responses import StreamingResponse
 from jinja2 import Environment as JinjaEnv
 from jsonschema import ValidationError
 from sqlalchemy import ARRAY, String, cast as db_cast
 from sqlalchemy.orm import Session, Query as SqlQuery
-
-from app.compose.renderer import CONVERTERS, RendererNotFound, compose
-from app.compose.renderer import InvalidPageNumber, Renderer, RendererNotFound, compose
-from app.compose.renderer import Renderer, RendererNotFound, compose
-from app.deps import get_db, get_jinja_env
-from app.exceptions import UnsupportedMIMEType, TemplateNotFoundException, JSONSchemaVerificationErrorException
-from app.models.template import Template
-from app.request_logger_route import RequestLoggerRoute
-from app.schemas.template_detail import TemplateDetailSchema, MIMETypeEnum
 
 ALL_AVAILABLE_MIME_TYPES = list(CONVERTERS.keys())
 
