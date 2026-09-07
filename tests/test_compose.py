@@ -1,23 +1,21 @@
 import io
-import tempfile
 from contextlib import asynccontextmanager
-from starlette import status
 from math import isclose
 
 import pytest
 from PIL import Image
+from app.deps import get_db
+from app.file_storage import DiskFileStorage
+from app.main import app
+from app.models.template import Template
+from app.schemas.template_detail import MIMETypeEnum
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
-
-from app.deps import get_db
-from app.file_storage import DiskFileStorage
-from app.main import app
-from app.models.template import Template
-from app.schemas.template_detail import MIMETypeEnum
+from starlette import status
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
@@ -67,14 +65,13 @@ def client_with_jinjaenv(db):
 
     @asynccontextmanager
     async def mock_lifespan(app: FastAPI):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(
-                loader=template_loader,
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            yield
+        app.state.file_storage = DiskFileStorage()
+        app.state.jinja_env = JinjaEnv(
+            loader=template_loader,
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=True
+        )
+        yield
 
     app.dependency_overrides[get_db] = lambda: db
     app.router.lifespan_context = mock_lifespan

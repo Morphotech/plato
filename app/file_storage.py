@@ -45,8 +45,6 @@ class NoIndexTemplateFound(FileStorageError):
 
 
 class PlatoFileStorage(ABC):
-    def __init__(self, data_directory: str):
-        self.files_directory_name = data_directory
 
     @staticmethod
     def write_files(files: Dict[str, Any], target_directory: str) -> None:
@@ -110,13 +108,10 @@ class PlatoFileStorage(ABC):
 
 
 class DiskFileStorage(PlatoFileStorage):
-    def __init__(self, data_directory: str):
-        super().__init__(data_directory)
-
+    pass
 
 class S3FileStorage(PlatoFileStorage):
-    def __init__(self, data_directory: str, bucket_name: str):
-        super().__init__(data_directory)
+    def __init__(self, bucket_name: str):
         self.bucket_name = bucket_name
         self.aws_credentials_dict = self.get_aws_credentials(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json")
 
@@ -156,8 +151,7 @@ class S3FileStorage(PlatoFileStorage):
 
 
 class GCSFileStorage(PlatoFileStorage):
-    def __init__(self, data_directory: str, bucket_name: str):
-        super().__init__(data_directory)
+    def __init__(self, bucket_name: str):
         self.bucket_name = bucket_name
         self.gcs_client = Client.from_service_account_json(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
 

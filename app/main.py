@@ -38,7 +38,7 @@ async def lifespan(api: FastAPI):
     settings = get_settings()
     logger.info(f"Plato starting up (storage={settings.STORAGE_TYPE}, template_directory={settings.TEMPLATE_DIRECTORY})")
 
-    api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
+    api.state.file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.BUCKET_NAME)
 
     with db_session() as db:
         api.state.file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)
