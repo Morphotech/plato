@@ -2,20 +2,22 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from fastapi.testclient import TestClient
+from jinja2 import DictLoader, select_autoescape
+from jinja2 import Environment as JinjaEnv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from testcontainers.postgres import PostgresContainer
+
 from app.db.base_class import Base
 from app.deps import get_db, get_jinja_env
 from app.fastapi_app import get_app
 from app.file_storage import DiskFileStorage, StorageType
 from app.settings import get_settings
-from fastapi.testclient import TestClient
-from jinja2 import Environment as JinjaEnv, DictLoader, select_autoescape
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from testcontainers.postgres import PostgresContainer
 
 settings = get_settings()
 settings.STORAGE_TYPE = StorageType.DISK
-settings.BUCKET_NAME = 'test_template_bucket'
+settings.BUCKET_NAME = "test_template_bucket"
 settings.TEMPLATE_DIRECTORY = str(Path(__file__).resolve().parent / "resources")
 settings.CREDENTIALS_DIR = str(Path(__file__).resolve().parent / "resources")
 
@@ -32,7 +34,9 @@ def db():
 
 def _setup_test_db(database_uri):
     test_engine = create_engine(database_uri, pool_pre_ping=True)
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=test_engine
+    )
     try:
         db = TestingSessionLocal()
         Base.metadata.create_all(bind=test_engine)
@@ -43,14 +47,18 @@ def _setup_test_db(database_uri):
         db.close()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def fastapi_client_local_storage(db):
-    with mock.patch("app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage()), \
-         mock.patch("app.fastapi_app.db_session", return_value=db):
+    with (
+        mock.patch(
+            "app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage()
+        ),
+        mock.patch("app.fastapi_app.db_session", return_value=db),
+    ):
         jinja_env = JinjaEnv(
             loader=DictLoader({}),
             autoescape=select_autoescape(["html", "xml"]),
-            auto_reload=True
+            auto_reload=True,
         )
 
         app = get_app()

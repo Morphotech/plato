@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from starlette import status
 
+
 class UnsupportedMIMEType(HTTPException):
     """
     Raised when the mime type requested is not supported

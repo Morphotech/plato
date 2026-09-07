@@ -14,7 +14,7 @@ These instructions will get the project up and running on your local environment
 
 ### Prerequisites
 
-- [Python 3.7+](https://www.python.org/)
+- [Python 3.13+](https://www.python.org/)
 - [Poetry 1.0+](https://python-poetry.org/)
 - [Docker](https://docker.com)
 - [Docker-compose](https://docs.docker.com/compose/)
@@ -93,6 +93,17 @@ Alternatively, you can use the GCS service following the same process. However, 
 different name:
 *service_account_key.json*
 
+#### Useful commands
+
+A `Makefile` is provided with shortcuts for common tasks:
+
+- `make run` — run the app locally with `fastapi dev`
+- `make pytest` / `make coverage` — run the test suite, with or without coverage report
+- `make mypy` — run static type checking
+- `make ruff` / `make ruff-format` — lint / auto-format the code with ruff
+- `make tox` — run the full tox suite (tests, mypy, ruff, alembic head check) in one go
+- `make alembic-upgrade` / `make alembic-downgrade` / `make alembic-revision` / `make alembic-merge` — common Alembic migration commands
+
 #### Logging
 
 Plato logs to the console and to a rotating JSON file at `${DATA_DIR}/logs/app.log` (rotated at midnight, retained 
@@ -116,7 +127,7 @@ docker compose up -d database
 To do the same for the database you may try accessing it through
 
 ```
-postgresql://templating:template-pass@localhost:5455/templating
+postgresql://plato:plato-pass@localhost:5455/plato
 ```
 
 Then you have to initialize the DB, which is done through [Alembic](https://alembic.sqlalchemy.org).

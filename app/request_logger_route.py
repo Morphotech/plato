@@ -1,8 +1,9 @@
 import json
 import logging
+from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from time import time
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 from fastapi import HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -57,7 +58,9 @@ class RequestLoggerRoute(APIRoute):
             except HTTPException as exc:
                 logger_context.status = exc.status_code
                 logger_context.execution_time = time() - start_time
-                logger.warning(f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}")
+                logger.warning(
+                    f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}"
+                )
                 raise
             except RequestValidationError:
                 # Not an HTTPException, but still a normal client-caused failure (FastAPI
@@ -65,19 +68,27 @@ class RequestLoggerRoute(APIRoute):
                 # unhandled server error.
                 logger_context.status = status.HTTP_422_UNPROCESSABLE_ENTITY
                 logger_context.execution_time = time() - start_time
-                logger.warning(f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}")
+                logger.warning(
+                    f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}"
+                )
                 raise
             except Exception:
                 logger_context.execution_time = time() - start_time
-                logger.exception(f"Server error in request - {logger_context.model_dump_json(exclude_none=True)}")
+                logger.exception(
+                    f"Server error in request - {logger_context.model_dump_json(exclude_none=True)}"
+                )
                 raise
 
             logger_context.status = response.status_code
             logger_context.execution_time = time() - start_time
             if response.status_code >= HTTPStatus.BAD_REQUEST:
-                logger.warning(f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}")
+                logger.warning(
+                    f"Client warning in request - {logger_context.model_dump_json(exclude_none=True)}"
+                )
             else:
-                logger.info(f"Successful request - {logger_context.model_dump_json(exclude_none=True)}")
+                logger.info(
+                    f"Successful request - {logger_context.model_dump_json(exclude_none=True)}"
+                )
 
             return response
 

@@ -3,7 +3,7 @@ import logging
 import pathlib
 from abc import ABC
 from enum import Enum
-from typing import Dict, Any
+from typing import Any
 
 from google.cloud.storage import Client
 from smart_open import s3
@@ -17,16 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 class StorageType(str, Enum):
-    S3 = 's3'
-    DISK = 'disk'
-    GCS = 'gcs'
+    S3 = "s3"
+    DISK = "disk"
+    GCS = "gcs"
 
 
 class FileStorageError(Exception):
     """
     Error for any setup Exception to occur when running this module's functions.
     """
-    ...
 
 
 class NoIndexTemplateFound(FileStorageError):
@@ -45,9 +44,8 @@ class NoIndexTemplateFound(FileStorageError):
 
 
 class PlatoFileStorage(ABC):
-
     @staticmethod
-    def write_files(files: Dict[str, Any], target_directory: str) -> None:
+    def write_files(files: dict[str, Any], target_directory: str) -> None:
         """
         Write files to a supplied target directory
 
@@ -62,10 +60,11 @@ class PlatoFileStorage(ABC):
             with open(path, mode="wb") as file:
                 file.write(content)
 
-    def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
+    def get_file(self, path: str, template_directory: str) -> dict[str, Any]:
         """
         Get files from a storage service and save them in the form of a dict. If a folder is inserted as the url,
             all files in that folder will be returned
+        Not implemented for disk storage, since `load_templates` never calls it in that case.
 
         Args:
             path (str): the url leading to the file/folder
@@ -74,9 +73,11 @@ class PlatoFileStorage(ABC):
         Returns:
          A dictionary with key as file's relative location and value as file's content
         """
-        pass
+        raise NotImplementedError
 
-    def load_templates(self, target_directory: str, template_directory_name: str, db: Session) -> None:
+    def load_templates(
+        self, target_directory: str, template_directory_name: str, db: Session
+    ) -> None:
         """
         Gets templates from the bucket which are associated with ones available in the DB.
         Expected directory structure is {template_directory_name}/{template_id}/{template_id}.html,
@@ -96,8 +97,10 @@ class PlatoFileStorage(ABC):
         templates = db.query(Template).all()
         for template in templates:
             # get template folder content (index HTML file + static/ subfolder)
-            template_files = self.get_file(path=template_path(template_directory_name, template.id),
-                                           template_directory=template_directory_name)
+            template_files = self.get_file(
+                path=template_path(template_directory_name, template.id),
+                template_directory=template_directory_name,
+            )
             index_key = f"/{template.id}/{template.id}.html"
             if index_key not in template_files:
                 raise NoIndexTemplateFound(template.id)
@@ -110,12 +113,15 @@ class PlatoFileStorage(ABC):
 class DiskFileStorage(PlatoFileStorage):
     pass
 
+
 class S3FileStorage(PlatoFileStorage):
     def __init__(self, bucket_name: str):
         self.bucket_name = bucket_name
-        self.aws_credentials_dict = self.get_aws_credentials(f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json")
+        self.aws_credentials_dict = self.get_aws_credentials(
+            f"{get_settings().CREDENTIALS_DIR}/aws_credentials.json"
+        )
 
-    def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
+    def get_file(self, path: str, template_directory: str) -> dict[str, Any]:
         """
         Get files from S3 and save them in the form of a dict. If a folder is inserted as the url, all files in that folder
             will be returned
@@ -128,45 +134,59 @@ class S3FileStorage(PlatoFileStorage):
          A dictionary with key as file's relative location on s3-bucket and value as file's content
         """
         key_content_mapping: dict = {}
-        for key, content in s3.iter_bucket(bucket_name=self.bucket_name, prefix=path, session_kwargs=self.aws_credentials_dict):
-            if key[-1] == '/' or not content:
+        for key, content in s3.iter_bucket(
+            bucket_name=self.bucket_name,
+            prefix=path,
+            session_kwargs=self.aws_credentials_dict,
+        ):
+            if key[-1] == "/" or not content:
                 # Is a directory
                 continue
             # based on https://www.python.org/dev/peps/pep-0616/
-            new_key = key[len(template_directory):]
+            new_key = key[len(template_directory) :]
             key_content_mapping[new_key] = content
         return key_content_mapping
 
     @staticmethod
-    def get_aws_credentials(path_to_file: str) -> Dict[str, Any]:
+    def get_aws_credentials(path_to_file: str) -> dict[str, Any]:
         try:
             with open(f"{path_to_file}", encoding="utf-8") as aws_credentials_file:
                 return json.loads(aws_credentials_file.read())
         except FileNotFoundError as exc:
-            raise FileStorageError(f"AWS credentials file not found at '{path_to_file}'. "
-                "Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs.") from exc
+            raise FileStorageError(
+                f"AWS credentials file not found at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs."
+            ) from exc
         except json.JSONDecodeError as exc:
-            raise FileStorageError(f"Invalid JSON in AWS credentials file at '{path_to_file}'. "
-                "Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs.") from exc
+            raise FileStorageError(
+                f"Invalid JSON in AWS credentials file at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs."
+            ) from exc
 
 
 class GCSFileStorage(PlatoFileStorage):
     def __init__(self, bucket_name: str):
         self.bucket_name = bucket_name
-        self.gcs_client = self.get_gcs_client(f"{get_settings().CREDENTIALS_DIR}/service_account_key.json")
+        self.gcs_client = self.get_gcs_client(
+            f"{get_settings().CREDENTIALS_DIR}/service_account_key.json"
+        )
 
     @staticmethod
-    def get_gcs_client(path_to_file: str) -> Client:
+    def get_gcs_client(path_to_file: str) -> Client:  # type: ignore[no-any-unimported]
         try:
             return Client.from_service_account_json(path_to_file)
         except FileNotFoundError as exc:
-            raise FileStorageError(f"GCS service account key file not found at '{path_to_file}'. "
-                "Expected a UTF-8 encoded JSON file containing GCS service account credentials.") from exc
+            raise FileStorageError(
+                f"GCS service account key file not found at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON file containing GCS service account credentials."
+            ) from exc
         except json.JSONDecodeError as exc:
-            raise FileStorageError(f"Invalid JSON in GCS service account key file at '{path_to_file}'. "
-                "Expected a UTF-8 encoded JSON object containing GCS service account credentials.") from exc
+            raise FileStorageError(
+                f"Invalid JSON in GCS service account key file at '{path_to_file}'. "
+                "Expected a UTF-8 encoded JSON object containing GCS service account credentials."
+            ) from exc
 
-    def get_file(self, path: str, template_directory: str) -> Dict[str, Any]:
+    def get_file(self, path: str, template_directory: str) -> dict[str, Any]:
         """
         Get files from GCS and save them in the form of a dict. If a folder is inserted as the url, all files in that folder
             will be returned
@@ -182,6 +202,6 @@ class GCSFileStorage(PlatoFileStorage):
         blobs = list(self.gcs_client.bucket(self.bucket_name).list_blobs(prefix=path))
         for blob in blobs:
             # based on https://www.python.org/dev/peps/pep-0616/
-            new_key = blob.name[len(template_directory):]
+            new_key = blob.name[len(template_directory) :]
             key_content_mapping[new_key] = blob.download_as_bytes()
         return key_content_mapping

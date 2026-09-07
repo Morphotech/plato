@@ -3,7 +3,8 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from jinja2 import Environment as JinjaEnv, FileSystemLoader
+from jinja2 import Environment as JinjaEnv
+from jinja2 import FileSystemLoader
 
 from app.deps import get_db, get_jinja_env
 from app.settings import get_settings
@@ -49,4 +50,3 @@ class TestDependencies:
 
         mock_create_env.assert_called_once_with(get_settings().TEMPLATE_DIRECTORY)
         assert first is second
-

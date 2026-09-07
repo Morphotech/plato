@@ -1,18 +1,27 @@
-from jinja2 import Environment as JinjaEnv, FileSystemLoader, select_autoescape
+from jinja2 import Environment as JinjaEnv
+from jinja2 import FileSystemLoader, select_autoescape
 
 from app.compose import FILTERS
-from ..file_storage import PlatoFileStorage, S3FileStorage, DiskFileStorage, StorageType, GCSFileStorage
+
+from ..file_storage import (
+    DiskFileStorage,
+    GCSFileStorage,
+    PlatoFileStorage,
+    S3FileStorage,
+    StorageType,
+)
 
 
 class InvalidFileStorageTypeException(Exception):
     """
     Exception raised when attempting to initialize the File Storage with an invalid type
     """
+
     def __init__(self, type_: str):
         """
         Constructor method
         """
-        super(InvalidFileStorageTypeException, self).__init__(type_)
+        super().__init__(type_)
 
 
 def create_template_environment(template_directory_path: str) -> JinjaEnv:
@@ -29,13 +38,13 @@ def create_template_environment(template_directory_path: str) -> JinjaEnv:
     """
     env = JinjaEnv(
         loader=FileSystemLoader(template_directory_path),
-        autoescape=select_autoescape(["html", "xml"])
+        autoescape=select_autoescape(["html", "xml"]),
     )
     env.filters.update({filter_.__name__: filter_ for filter_ in FILTERS})
     return env
 
 
-def initialize_file_storage(storage_type: str, bucket_name: str | None) -> PlatoFileStorage:
+def initialize_file_storage(storage_type: str, bucket_name: str) -> PlatoFileStorage:
     """
     Initializes a correct instance of the Plato File Storage, depending on the env values.
 

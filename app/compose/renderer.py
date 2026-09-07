@@ -1,22 +1,22 @@
 import io
 import tempfile
+from collections.abc import Callable
 from tempfile import TemporaryDirectory
-from typing import Callable, Dict
+
+from jinja2 import Environment as JinjaEnv
+from jsonschema import validate as validate_schema
+from weasyprint import HTML
 
 from app.compose.qr import render_qr_codes
 from app.models.template import Template
 from app.schemas.template_detail import MIMETypeEnum
 from app.settings import get_settings
-from jinja2 import Environment as JinjaEnv
-from jsonschema import validate as validate_schema
-from weasyprint import HTML
 
 
 class RendererNotFound(Exception):
     """
     Exception to be raised when there is no renderer for the requested MIME type
     """
-    ...
 
 
 
@@ -26,7 +26,7 @@ def to_pdf(html: str) -> bytes:
     """
     with tempfile.NamedTemporaryFile() as target_file_html:
         HTML(string=html).write_pdf(target_file_html.name)
-        with open(target_file_html.name, mode='rb') as temp_file_stream:
+        with open(target_file_html.name, mode="rb") as temp_file_stream:
             return temp_file_stream.read()
 
 
@@ -37,7 +37,7 @@ def to_html(html: str) -> bytes:
     return bytes(html, encoding="utf-8")
 
 
-CONVERTERS: Dict[str, Callable[[str], bytes]] = {
+CONVERTERS: dict[str, Callable[[str], bytes]] = {
     MIMETypeEnum.PDF_MIME.value: to_pdf,
     MIMETypeEnum.HTML_MIME.value: to_html,
 }
