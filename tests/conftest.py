@@ -21,6 +21,7 @@ from app.settings import get_settings
 
 settings = get_settings()
 settings.BUCKET_NAME = 'test_template_bucket'
+settings.TEMPLATE_DIRECTORY = str(Path(__file__).resolve().parent / "resources")
 
 @pytest.fixture(scope="session")
 def db():
@@ -49,18 +50,16 @@ def _setup_test_db(database_uri):
 def fastapi_client_s3_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir, mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
+        with mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials:
             mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
                                                      "aws_secret_access_key": "test_secret_key",
                                                      "region_name": "test_region"}
-            app.state.file_storage = S3FileStorage(file_dir, settings.BUCKET_NAME)
+            app.state.file_storage = S3FileStorage(settings.BUCKET_NAME)
             app.state.jinja_env = JinjaEnv(
                 loader=DictLoader({}),
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -74,20 +73,18 @@ def fastapi_client_s3_storage(db):
 def fastapi_client_gcs_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir, mock.patch.object(Client, "from_service_account_json") as mock_init_client:
+        with mock.patch.object(Client, "from_service_account_json") as mock_init_client:
             gcs_client = MagicMock(spec=Client)
             bucket = MagicMock(spec=storage.Bucket)
             gcs_client.bucket.return_value = bucket
             mock_init_client.return_value = gcs_client
             app.state.mocked_bucket = bucket
-            app.state.file_storage = GCSFileStorage(file_dir, settings.BUCKET_NAME)
+            app.state.file_storage = GCSFileStorage(settings.BUCKET_NAME)
             app.state.jinja_env = JinjaEnv(
                 loader=DictLoader({}),
                 autoescape=select_autoescape(["html", "xml"]),
                 auto_reload=True
             )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
             yield
 
     app.dependency_overrides[get_db] = lambda: db
@@ -101,16 +98,13 @@ def fastapi_client_gcs_storage(db):
 def fastapi_client_local_storage(db):
     @asynccontextmanager
     async def mock_lifespan(app):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(
-                loader=DictLoader({}),
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
-            yield
+        app.state.file_storage = DiskFileStorage()
+        app.state.jinja_env = JinjaEnv(
+            loader=DictLoader({}),
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=True
+        )
+        yield
 
     app.dependency_overrides[get_db] = lambda: db
     app.router.lifespan_context = mock_lifespan

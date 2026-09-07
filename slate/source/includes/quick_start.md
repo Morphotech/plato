@@ -22,19 +22,17 @@ passed into the Plato container as a volume.
 Also, please take into consideration that the bucket's structure will need to follow a specific set of rules:
 
 * You require a main, base directory for all the templating files. This can be called anything you want (ex: plato), 
- and does not have to be localized in the base bucket directory. 
-* Inside the main directory, two subdirectories are required with very specific names and structures:
-  * **templates** directory, where the HTML files of the templates are stored. Each template HTML file is stored within
-  a folder that is named the same as the template ID. Furthermore, the HTML file should also be named the same and
-  should not contain an extension (.html).
-  * **static** directory, where the template static files are stored. Similarly to the templates folder, all static files
-  for a template are stored in a folder with the same name as the template ID. The static content can have any name or
-  structure, as long as they are correctly imported in the HTML file.
-  
+ and does not have to be localized in the base bucket directory. This directory directly contains one folder per
+ template, named the same as the template ID. Everything for that template lives inside its own folder:
+  * The main HTML file, named the same as the template ID, **including** the `.html` extension.
+  * A **static** subfolder, containing any other content imported by the template (images, CSS, fonts, partial HTML
+    files, etc). The static content can have any name or structure within that subfolder, as long as it is correctly
+    imported in the HTML file.
+
 For example:
 
-  * `plato/static/example_template/image.png`
-  * `plato/templates/example_template/example_template`
+  * `plato/example_template/example_template.html`
+  * `plato/example_template/static/image.png`
 
 ### Docker configuration
 

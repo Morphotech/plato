@@ -1,24 +1,21 @@
 import io
-import tempfile
 from contextlib import asynccontextmanager
-from starlette import status
 from math import isclose
-from pathlib import Path
 
 import pytest
 from PIL import Image
+from app.deps import get_db
+from app.file_storage import DiskFileStorage
+from app.main import app
+from app.models.template import Template
+from app.schemas.template_detail import MIMETypeEnum
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
-
-from app.deps import get_db
-from app.file_storage import DiskFileStorage
-from app.main import app
-from app.models.template import Template
-from app.schemas.template_detail import MIMETypeEnum
+from starlette import status
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
@@ -31,10 +28,10 @@ PNG_IMAGE_NAME = "balloons.png"
 def client_with_jinjaenv(db):
     template_loader = DictLoader({})
 
-    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}"
+    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}.html"
     template_loader.mapping[plain_text_jinja_id] = "{{ p.plain }}"
 
-    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}"
+    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[png_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -45,7 +42,7 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}"
+    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[no_image_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -56,7 +53,7 @@ def client_with_jinjaenv(db):
         '</html>'
     )
 
-    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}"
+    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}.html"
     template_loader.mapping[qr_code_template_jinja_id] = (
         '<!DOCTYPE html>'
         '<html>'
@@ -68,16 +65,13 @@ def client_with_jinjaenv(db):
 
     @asynccontextmanager
     async def mock_lifespan(app: FastAPI):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(
-                loader=template_loader,
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
-            yield
+        app.state.file_storage = DiskFileStorage()
+        app.state.jinja_env = JinjaEnv(
+            loader=template_loader,
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=True
+        )
+        yield
 
     app.dependency_overrides[get_db] = lambda: db
     app.router.lifespan_context = mock_lifespan
