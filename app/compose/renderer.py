@@ -19,7 +19,6 @@ class RendererNotFound(Exception):
     """
 
 
-
 def to_pdf(html: str) -> bytes:
     """
     Converts the given HTML string into PDF bytes using WeasyPrint.
@@ -55,12 +54,18 @@ def render_html(template: Template, compose_data: dict, jinja_env: JinjaEnv) -> 
     Returns:
         str: HTML string for composed file.
     """
-    template_static_directory = f"{get_settings().TEMPLATE_DIRECTORY}/{template.id}/static/"
+    template_static_directory = (
+        f"{get_settings().TEMPLATE_DIRECTORY}/{template.id}/static/"
+    )
     jinja_template = jinja_env.get_template(name=f"{template.id}/{template.id}.html")
-    return jinja_template.render(p=compose_data, template_static=template_static_directory)
+    return jinja_template.render(
+        p=compose_data, template_static=template_static_directory
+    )
 
 
-def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv) -> io.BytesIO:
+def compose(
+    template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv
+) -> io.BytesIO:
     """
     Composes a file of the given mime_type using the compose_data to fill the given template.
 
