@@ -5,7 +5,7 @@ from abc import ABC
 from enum import Enum
 from typing import Any
 
-from google.cloud.storage import Client
+from google.cloud.storage import Client as GCSClient
 from smart_open import s3
 from sqlalchemy.orm import Session
 
@@ -172,9 +172,9 @@ class GCSFileStorage(PlatoFileStorage):
         )
 
     @staticmethod
-    def get_gcs_client(path_to_file: str) -> Client:  # type: ignore[no-any-unimported]
+    def get_gcs_client(path_to_file: str) -> GCSClient:  # type: ignore[no-any-unimported]
         try:
-            return Client.from_service_account_json(path_to_file)
+            return GCSClient.from_service_account_json(path_to_file)
         except FileNotFoundError as exc:
             raise FileStorageError(
                 f"GCS service account key file not found at '{path_to_file}'. "
