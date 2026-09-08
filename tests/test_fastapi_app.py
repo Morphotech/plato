@@ -1,17 +1,15 @@
 import json
-from contextlib import contextmanager
 from unittest import mock
 from unittest.mock import MagicMock, mock_open
 
 import pytest
-from fastapi import FastAPI
-from google.cloud.storage import Client
-
 from app.fastapi_app import get_app
 from app.file_storage import FileStorageError, NoIndexTemplateFound, S3FileStorage, StorageType
 from app.models import Template
 from app.settings import get_settings
 from app.util.setup_util import InvalidFileStorageTypeException
+from fastapi import FastAPI
+from google.cloud.storage import Client
 
 settings = get_settings()
 

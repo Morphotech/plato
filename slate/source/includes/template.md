@@ -105,16 +105,15 @@ curl -X POST "http://localhost:8000/templates/<template_id>/compose" -H  "accept
 ```
 
 ```python
-file = plato_client.compose(template_id, compose_data, mime_type, page, resize_height, resize_width)
+file = plato_client.compose(template_id, compose_data, mime_type)
 ```
 
 Composes a template into a file of a specific type by filling in the placeholders with the intended data. The type of
 the file to compose can be defined by the accept header, and is expected to be in MIME format. 
-It is currently possible to generate a file of three different types:
+It is currently possible to generate a file of two different types:
 
 * HTML: text/html
 * PDF: application/pdf
-* PNG: image/png
 
 Other parameters include:
 
@@ -123,9 +122,6 @@ Other parameters include:
     template_id | Path   | No       | ID of the template to compose.
     schema      | Body   | No       | Json containing the data to add to the template, according to template schema.
     accept      | Header | No       | Type of file to create.
-    page        | query  | Yes      | Specific page of the template to compose. If none is given, all pages are composed. Defaults to one if an image type is chosen.
-    height      | query  | Yes      | Height of the file to compose, if image type is chosen.
-    width       | query  | Yes      | Weight of the file to compose, if image type is chosen.  
 
 ### HTTP Request
 
@@ -151,16 +147,15 @@ curl -X GET "http://localhost:8000/templates/<template_id>/example" -H  "accept:
 ```
 
 ```python
-file = plato_client.compose(template_id, compose_data, mime_type, page, resize_height, resize_width)
+file = plato_client.compose(template_id, compose_data, mime_type)
 ```
 
 Composes a template into an example file of a specific type. The placeholders are filled in with example data
 that is configured directly in the database. The type of the file to compose can be defined by the accept header, 
-and is expected to be in MIME format. It is currently possible to generate a file of three different types:
+and is expected to be in MIME format. It is currently possible to generate a file of two different types:
 
 * HTML: text/html
 * PDF: application/pdf
-* PNG: image/png
 
 Other parameters include:
 
@@ -168,9 +163,6 @@ Other parameters include:
     ----------- | ------ | -------- | -----------------------------
     template_id | Path   | No       | ID of the template to compose.
     accept      | Header | No       | Type of file to create.
-    page        | query  | Yes      | Specific page of the template to compose. If none is given, all pages are composed. Defaults to one if an image type is chosen.
-    height      | query  | Yes      | Height of the file to compose, if image type is chosen.
-    width       | query  | Yes      | Weight of the file to compose, if image type is chosen.  
 
 ### HTTP Request
 
