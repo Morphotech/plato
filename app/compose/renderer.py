@@ -19,22 +19,6 @@ class RendererNotFound(Exception):
     ...
 
 
-def render_html(template: Template, compose_data: dict, jinja_env: JinjaEnv) -> str:
-    """
-    Creates the template HTML string using the Jinja2 environment.
-
-    Args:
-        template: The Template model to be used in the composition
-        compose_data: The data to fill the template with.
-        jinja_env: The Jinja2 environment to be used for rendering the template
-
-    Returns:
-        str: HTML string for composed file.
-    """
-    template_static_directory = f"{get_settings().TEMPLATE_DIRECTORY}/{template.id}/static/"
-    jinja_template = jinja_env.get_template(name=f"{template.id}/{template.id}.html")
-    return jinja_template.render(p=compose_data, template_static=template_static_directory)
-
 
 def to_pdf(html: str) -> bytes:
     """
@@ -57,6 +41,23 @@ CONVERTERS: Dict[str, Callable[[str], bytes]] = {
     MIMETypeEnum.PDF_MIME.value: to_pdf,
     MIMETypeEnum.HTML_MIME.value: to_html,
 }
+
+
+def render_html(template: Template, compose_data: dict, jinja_env: JinjaEnv) -> str:
+    """
+    Creates the template HTML string using the Jinja2 environment.
+
+    Args:
+        template: The Template model to be used in the composition
+        compose_data: The data to fill the template with.
+        jinja_env: The Jinja2 environment to be used for rendering the template
+
+    Returns:
+        str: HTML string for composed file.
+    """
+    template_static_directory = f"{get_settings().TEMPLATE_DIRECTORY}/{template.id}/static/"
+    jinja_template = jinja_env.get_template(name=f"{template.id}/{template.id}.html")
+    return jinja_template.render(p=compose_data, template_static=template_static_directory)
 
 
 def compose(template: Template, compose_data: dict, mime_type: str, jinja_env: JinjaEnv) -> io.BytesIO:
