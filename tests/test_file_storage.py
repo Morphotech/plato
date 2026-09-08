@@ -14,7 +14,7 @@ from app.file_storage import (
     FileStorageError,
     GCSFileStorage,
     NoIndexTemplateFound,
-    S3FileStorage,
+    S3FileStorage, PlatoFileStorage,
 )
 from app.models import Template
 from app.settings import get_settings
@@ -106,6 +106,11 @@ class TestFileStorage:
             assert pathlib.Path(static_file_1).is_file()
             assert pathlib.Path(static_file_2).is_file()
             assert pathlib.Path(template_file_1).is_file()
+
+    def test_get_file_abstract_class(self):
+        file_storage = PlatoFileStorage()
+        with pytest.raises(NotImplementedError):
+            file_storage.get_file("path", "directory")
 
     def test_get_aws_credentials(self):
         mock_aws_credentials_data = """\
