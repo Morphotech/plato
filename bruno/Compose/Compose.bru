@@ -5,15 +5,9 @@ meta {
 }
 
 post {
-  url: {{HOST}}/template/:templateName/compose
+  url: {{HOST}}/templates/:templateName/compose
   body: json
   auth: inherit
-}
-
-params:query {
-  ~page: 
-  ~width: 
-  ~height: 
 }
 
 params:path {
@@ -23,7 +17,6 @@ params:path {
 headers {
   ~custom-accept: application/pdf
   ~custom-accept: text/html
-  ~custom-accept: image/png
   ~custom-accept: application/octet-stream
 }
 

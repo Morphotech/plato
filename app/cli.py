@@ -1,10 +1,8 @@
-from typing import Optional
-
 import typer
 from sqlalchemy.orm import Session
 
-from app.models.template import Template
 from app.deps import get_db
+from app.models.template import Template
 from app.schemas.template_detail import TemplateDetailSchema
 from app.settings import get_settings
 from app.util.setup_util import initialize_file_storage
@@ -18,7 +16,7 @@ def get_session() -> Session:
 
 
 @app_cli.command()
-def export_template(output: str, template_id: Optional[str] = None):
+def export_template(output: str, template_id: str | None = None) -> None:
     """
     Export template to file.
 
@@ -33,21 +31,26 @@ def export_template(output: str, template_id: Optional[str] = None):
         templates = session.query(Template).all()
         template_options = "\n".join([template.id for template in templates])
         typer.echo(template_options)
-        template_id = typer.prompt("Please enter the id for the template you wish to export")
+        template_id = typer.prompt(
+            "Please enter the id for the template you wish to export"
+        )
     template = session.query(Template).filter_by(id=template_id).one()
     with open(output, "w") as f:
         template_schema = TemplateDetailSchema.model_validate(template)
         f.write(template_schema.model_dump_json())
     typer.echo(f"Template {template_id} exported to {output}.")
 
+
 @app_cli.command()
-def refresh():
+def refresh() -> None:
     """
     Refresh local templates by loading the templates from file storage.
     """
-    file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.DATA_DIR, settings.BUCKET_NAME)
+    file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.BUCKET_NAME)
     with get_session() as db_session:
-        file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db_session)
+        file_storage.load_templates(
+            settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db_session
+        )
     typer.echo("Templates refreshed.")
 
 

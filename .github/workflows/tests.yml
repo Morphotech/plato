@@ -34,9 +34,9 @@ jobs:
           --health-retries=5
 
     env:
-      DATA_DIR: /plato-data/
-      CREDENTIALS_DIR: /credentials
-      TEMPLATE_DIRECTORY: /plato-data/templates/
+      DATA_DIR: ${{ github.workspace }}/plato-data/
+      CREDENTIALS_DIR: ${{ github.workspace }}/credentials
+      TEMPLATE_DIRECTORY: ${{ github.workspace }}/plato-data/templates/
       TEMPLATE_DIRECTORY_NAME: templating
       DB_HOST: localhost
       DB_PORT: 5456
@@ -63,6 +63,12 @@ jobs:
 
       - name: Run tests
         run: poetry run coverage run -m pytest && poetry run coverage xml -i -o coverage.xml
+
+      - name: Run quality checks
+        run: |
+          ./check_alembic_heads.sh
+          poetry run ruff check app tests
+          poetry run mypy --config-file mypy.ini app
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6.0.0

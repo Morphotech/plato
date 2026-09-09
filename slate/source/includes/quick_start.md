@@ -22,19 +22,17 @@ passed into the Plato container as a volume.
 Also, please take into consideration that the bucket's structure will need to follow a specific set of rules:
 
 * You require a main, base directory for all the templating files. This can be called anything you want (ex: plato), 
- and does not have to be localized in the base bucket directory. 
-* Inside the main directory, two subdirectories are required with very specific names and structures:
-  * **templates** directory, where the HTML files of the templates are stored. Each template HTML file is stored within
-  a folder that is named the same as the template ID. Furthermore, the HTML file should also be named the same and
-  should not contain an extension (.html).
-  * **static** directory, where the template static files are stored. Similarly to the templates folder, all static files
-  for a template are stored in a folder with the same name as the template ID. The static content can have any name or
-  structure, as long as they are correctly imported in the HTML file.
-  
+ and does not have to be localized in the base bucket directory. This directory directly contains one folder per
+ template, named the same as the template ID. Everything for that template lives inside its own folder:
+  * The main HTML file, named the same as the template ID, **including** the `.html` extension.
+  * A **static** subfolder, containing any other content imported by the template (images, CSS, fonts, partial HTML
+    files, etc). The static content can have any name or structure within that subfolder, as long as it is correctly
+    imported in the HTML file.
+
 For example:
 
-  * `plato/static/example_template/image.png`
-  * `plato/templates/example_template/example_template`
+  * `plato/example_template/example_template.html`
+  * `plato/example_template/static/image.png`
 
 ### Docker configuration
 
@@ -43,8 +41,9 @@ plato:
   image: plato-api:<VERSION>
   environment:
     DATA_DIR: /plato-data/
-    CREDENTIALS_DIR: <GCS_CREDENTIALS>
+    CREDENTIALS_DIR: /credentials
     TEMPLATE_DIRECTORY: /plato-data/templating/
+    TEMPLATE_DIRECTORY_NAME: <TEMPLATE_DIRECTORY_NAME>
     DB_HOST: plato-database
     DB_PORT: <PORT>
     DB_USERNAME: <USER>
@@ -56,8 +55,7 @@ plato:
   depends_on:
     - plato-database
   volumes:
-    - <AWS_CREDENTIALS>:/root/.aws
-    - <GCS_CREDENTIALS>:/credentials
+    - <CREDENTIALS_DIR>:/credentials
   ports:
     - 8000:8000
 
@@ -86,7 +84,7 @@ The *Alembic* table can be ignored, since it is used for migrations.
 You can directly copy the accompanying docker-compose configuration to your project, but make sure to fill in the missing variables:
 
 * BUCKET_NAME: The name of the bucket on S3/GCS to be used
-* CREDENTIALS_DIR: The directory in which the json file containing the GCS credentials is located
+* CREDENTIALS_DIR: The directory (inside the container) where the credentials JSON file is located. This is the same folder regardless of storage type — name the file `aws_credentials.json` for S3 or `service_account_key.json` for GCS
 * TEMPLATE_DIRECTORY_NAME: The base directory for Plato templates on the S3/GCS bucket. The full path to the folder is required if it is not in the base directory. Per our previous example, this
   value would be "plato".
 * STORAGE_TYPE: The storage type to be used by Plato. Currently, only "s3", "gcs" or "disk" are supported.
@@ -94,7 +92,7 @@ You can directly copy the accompanying docker-compose configuration to your proj
 * Database credentials (USER, PASSWORD, DB)
 
 You should not change the values for the DATA_DIR and TEMPLATE_DIRECTORY variables. All others can be changed and adapted
-to fit accordingly to your project's configuration. Also note that a volume for AWS and GCS credentials is created, so you have
+to fit accordingly to your project's configuration. Also note that a volume for the credentials is created, so you have
 to indicate where the credentials are in the running environment.
 
 You can now run both docker containers and the Plato API swagger will be available on http://localhost/docs. 
@@ -181,7 +179,7 @@ VALUES('student-diploma', '{"type": "object", "required": ["recipient_name", "ce
   An example insertion query can be found on the right side of this page.
 
 ```shell
-  docker compose exec -T api poetry run python /app/cli.py <command> <args>
+  docker compose exec -T plato-api python app/cli.py <command> <args>
   
   Commands:
     export-template        Export new template to file Args: output: output...
@@ -189,7 +187,7 @@ VALUES('student-diploma', '{"type": "object", "required": ["recipient_name", "ce
 ```
 
 * Use the Plato CLI. You have to enter the container with the *run* command, and then execute the *export-template* command, according to instructions to the right.
-   You can also run `docker compose exec -T api poetry run python /app/cli.py --help` for information on the available commands.
+   You can also run `docker compose exec -T plato-api python app/cli.py --help` for information on the available commands.
    The input JSON file that the *export-template* command requires has the JSON structure found on the right side of the page. Note that the title corresponds directly to the
    template ID.
 

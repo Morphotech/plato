@@ -5,15 +5,9 @@ meta {
 }
 
 get {
-  url: {{HOST}}/template/:templateName/example
+  url: {{HOST}}/templates/:templateName/example
   body: none
   auth: inherit
-}
-
-params:query {
-  ~page: 
-  ~height: 
-  ~width: 
 }
 
 params:path {
@@ -23,5 +17,4 @@ params:path {
 headers {
   ~custom-accept: application/pdf
   ~custom-accept: text/html
-  ~custom-accept: image/png
 }

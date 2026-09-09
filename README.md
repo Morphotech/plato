@@ -1,7 +1,10 @@
 # Plato Microservice
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/31c109ed05314bb79a65c200026742fa)](https://app.codacy.com/gh/Morphotech/plato/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Morphotech_plato&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Morphotech_plato)
 
 A python REST API for document composition through jsonschema.
 
@@ -11,28 +14,15 @@ These instructions will get the project up and running on your local environment
 
 ### Prerequisites
 
-- [Python 3.7+](https://www.python.org/)
+- [Python 3.13+](https://www.python.org/)
 - [Poetry 1.0+](https://python-poetry.org/)
 - [Docker](https://docker.com)
 - [Docker-compose](https://docs.docker.com/compose/)
 
 The project depends on [weasyprint](https://weasyprint.org/) for writing PDF from HTML so make sure you have everything
-weasyprint needs to run by following the instructions on this [page](https://weasyprint.readthedocs.io/en/latest/install.html#linux).
+weasyprint needs to run by following the instructions on this [page](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation).
 
 The instructions are also available below.
-
-#### Debian/Ubuntu
-
-```bash
-sudo apt-get install build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
-```
-
-#### MacOS
-
-```bash
-brew install weasyprint
-```
 
 Check if weasyprint is working:
 
@@ -52,6 +42,15 @@ Alternatively, if the above does not work, you can fetch the libfontconfig files
 ```bash
 sudo cp /opt/homebrew/Cellar/fontconfig/<VERSION>/lib/libfontconfig.* /usr/local/lib
 ````
+
+_Note_: this copy can go stale after a later `brew upgrade` of `fontconfig`/`pango` and cause a *different*
+error instead (`OSError: cannot load library 'libpangoft2-1.0-0'`), because the outdated copy in
+`/usr/local/lib` gets picked up ahead of Homebrew's current one. If you hit that error, remove the
+previously-copied files and re-test with `weasyprint --info` before copying anything again:
+
+```bash
+sudo rm /usr/local/lib/libfontconfig.dylib /usr/local/lib/libfontconfig.1.dylib /usr/local/lib/libfontconfig.a
+```
 
 ### Installing
 
@@ -76,11 +75,45 @@ the directory where your templates are stored.
 
 e.g TEMPLATE_DIRECTORY_NAME=projects/templating
 
-Make sure the bucket is accessible by providing credentials to the service by
-storing the S3 AWS credentials in your DATA_DIR/aws/. Also, ensure that you have a credentials folder inside DATA_DIR.
-This will permit you to use the GCS service, as an alternative to S3 AWS, should you provide a JSON file inside 
-the folder with the GCS credentials. This JSON file has to have a specific name so that plato can recognize it: 
+Ensure that you have a credentials folder inside DATA_DIR.
+This will permit you to use the S3 AWS service, should you provide a JSON file inside the folder with the S3 credentials.
+The file should have the following name so that plato can recognize it:
+*aws_credentials.json*
+
+The AWS S3 credentials JSON file should also have the following format:
+```json
+{"aws_access_key_id": "AWS access key ID",
+"aws_secret_access_key":"AWS secret access key",
+"region_name":"Default region when creating new connections"}
+```
+*Note: These are the necessary properties for functionality. If any other properties are needed, you can click this [link](https://docs.aws.amazon.com/boto3/latest/reference/core/session.html#boto3.session.Session),
+which leads to the AWS documentation, in regard to session parameters.*
+
+Alternatively, you can use the GCS service following the same process. However, the JSON file for the GCS service will need a
+different name:
 *service_account_key.json*
+
+#### Useful commands
+
+A `Makefile` is provided with shortcuts for common tasks:
+
+- `make run` — run the app locally with `fastapi dev`
+- `make pytest` / `make coverage` — run the test suite, with or without coverage report
+- `make mypy` — run static type checking
+- `make ruff` / `make ruff-format` — lint / auto-format the code with ruff
+- `make tox` — run the full tox suite (tests, mypy, ruff, alembic head check) in one go
+- `make alembic-upgrade` / `make alembic-downgrade` / `make alembic-revision` / `make alembic-merge` — common Alembic migration commands
+
+#### Logging
+
+Plato logs to the console and to a rotating JSON file at `${DATA_DIR}/logs/app.log` (rotated at midnight, retained 
+for `LOG_DURATION_DAYS` days — default 7).
+
+Configure verbosity via the `LOG_LEVEL` (console) and `FILE_LOG_LEVEL` (file) environment variables —
+both default to `INFO`.
+
+When adding log statements in application code, use `logging.getLogger(__name__)` — modules under `app/`
+automatically inherit Plato's console and file handlers this way.
 
 #### Database
 
@@ -94,7 +127,7 @@ docker compose up -d database
 To do the same for the database you may try accessing it through
 
 ```
-postgresql://templating:template-pass@localhost:5455/templating
+postgresql://plato:plato-pass@localhost:5455/plato
 ```
 
 Then you have to initialize the DB, which is done through [Alembic](https://alembic.sqlalchemy.org).
@@ -124,17 +157,6 @@ Locally:
 poetry run pytest
 ```
 
-Running tests inside the docker containers (you might need to build the plato docker image first):
-
-```bash
-docker compose -f docker-compose.ci.yml up -d database
-
-docker compose -f docker-compose.ci.yml run --rm test-plato
-
-docker compose -f docker-compose.ci.yml down
-
-```
-
 ## Use Command Line Interface
 
 You can use the CLI to manage templates directly from the command line. To use it, you need run the command `python app/cli.py <command> <args>`.
@@ -151,10 +173,10 @@ To see the available options for each command, you can run `python app/cli.py <c
 
 ## Publishing a new image version
 
-1. Guarantee the code is working and all tests are passing (especially in docker! If any test fails, fix it before proceeding):
+1. Guarantee the code is working and all tests are passing (If any test fails, fix it before proceeding):
     ```bash
+    tox
     docker compose build plato-api
-    docker compose -f docker-compose.ci.yml run --rm test-plato
     ```
    
 2. Update the version in `pyproject.toml` file, according to the [Calendar Versioning](https://calver.org/) scheme.
@@ -162,7 +184,7 @@ To see the available options for each command, you can run `python app/cli.py <c
 4. Build and push the docker image with the command:
 
     ```bash
-    docker buildx build -f Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
+    docker buildx build -f docker/prod.Dockerfile --platform linux/amd64,linux/arm64 -t 'vizidox/plato:<VERSION>' .
     docker push vizidox/plato:<VERSION>
     ```
 

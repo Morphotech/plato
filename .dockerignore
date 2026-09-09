@@ -1,0 +1,14 @@
+.git
+.idea
+.vscode
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.coverage
+coverage
+htmlcov
+.env
+.env.local
+data
+.github

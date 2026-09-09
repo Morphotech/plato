@@ -1,121 +1,123 @@
 import io
-import tempfile
-from contextlib import asynccontextmanager
-from starlette import status
-from math import isclose
-from pathlib import Path
+from unittest import mock
 
 import pytest
-from PIL import Image
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
 from pypdf import PdfReader
 from sqlalchemy.orm import Session
+from starlette import status
 
-from app.deps import get_db
+from app.deps import get_db, get_jinja_env
+from app.fastapi_app import get_app
 from app.file_storage import DiskFileStorage
-from app.main import app
 from app.models.template import Template
 from app.schemas.template_detail import MIMETypeEnum
 
 PLAIN_TEXT_TEMPLATE_ID = "plain_text"
 PNG_IMAGE_TEMPLATE_ID = "png_image"
-QR_CODE_TEMPLATE_ID = 'qr_code'
-NO_IMAGE_TEMPLATE_ID = PNG_IMAGE_TEMPLATE_ID.replace('p', 'u')
+QR_CODE_TEMPLATE_ID = "qr_code"
+NO_IMAGE_TEMPLATE_ID = PNG_IMAGE_TEMPLATE_ID.replace("p", "u")
 PNG_IMAGE_NAME = "balloons.png"
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def client_with_jinjaenv(db):
     template_loader = DictLoader({})
 
-    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}"
+    plain_text_jinja_id = f"{PLAIN_TEXT_TEMPLATE_ID}/{PLAIN_TEXT_TEMPLATE_ID}.html"
     template_loader.mapping[plain_text_jinja_id] = "{{ p.plain }}"
 
-    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}"
+    png_template_jinja_id = f"{PNG_IMAGE_TEMPLATE_ID}/{PNG_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[png_template_jinja_id] = (
-        '<!DOCTYPE html>'
-        '<html>'
-        '<body>'
+        "<!DOCTYPE html>"
+        "<html>"
+        "<body>"
         '<img id="img_" src="file://{{ template_static }}' + f'{PNG_IMAGE_NAME}">'
-        '</img>'
-        '</body>'
-        '</html>'
+        "</img>"
+        "</body>"
+        "</html>"
     )
 
-    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}"
+    no_image_template_jinja_id = f"{NO_IMAGE_TEMPLATE_ID}/{NO_IMAGE_TEMPLATE_ID}.html"
     template_loader.mapping[no_image_template_jinja_id] = (
-        '<!DOCTYPE html>'
-        '<html>'
-        '<body>'
+        "<!DOCTYPE html>"
+        "<html>"
+        "<body>"
         '<img id="img_" src="file://{{ template_static }}no_img.png">'
-        '</img>'
-        '</body>'
-        '</html>'
+        "</img>"
+        "</body>"
+        "</html>"
     )
 
-    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}"
+    qr_code_template_jinja_id = f"{QR_CODE_TEMPLATE_ID}/{QR_CODE_TEMPLATE_ID}.html"
     template_loader.mapping[qr_code_template_jinja_id] = (
-        '<!DOCTYPE html>'
-        '<html>'
-        '<body>'
+        "<!DOCTYPE html>"
+        "<html>"
+        "<body>"
         '<img src="file://{{ p.qr_code }}" alt="qr_fail">'
-        '</body>'
-        '</html>'
+        "</body>"
+        "</html>"
     )
 
-    @asynccontextmanager
-    async def mock_lifespan(app: FastAPI):
-        with tempfile.TemporaryDirectory() as file_dir:
-            app.state.file_storage = DiskFileStorage(file_dir)
-            app.state.jinja_env = JinjaEnv(
-                loader=template_loader,
-                autoescape=select_autoescape(["html", "xml"]),
-                auto_reload=True
-            )
-            current_folder = Path(__file__).resolve().parent
-            app.state.template_static_directory = str(current_folder / "resources/static")
-            yield
+    with mock.patch(
+        "app.fastapi_app.initialize_file_storage", return_value=DiskFileStorage()
+    ):
+        jinja_env = JinjaEnv(
+            loader=template_loader,
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=True,
+        )
 
-    app.dependency_overrides[get_db] = lambda: db
-    app.router.lifespan_context = mock_lifespan
+        app = get_app()
+        app.dependency_overrides[get_db] = lambda: db
+        app.dependency_overrides[get_jinja_env] = lambda: jinja_env
 
-    with TestClient(app) as client:
-        yield client
+        with TestClient(app) as client:
+            yield client
 
 
 @pytest.fixture(scope="class")
 def template_test_examples(client_with_jinjaenv: TestClient, db: Session):
-    plain_text_template_model = Template(id_=PLAIN_TEXT_TEMPLATE_ID,
-                                         schema={"type": "object",
-                                                 "properties": {"plain": {"type": "string"}}
-                                                 },
-                                         type_=MIMETypeEnum.HTML_MIME.value, metadata={},
-                                         example_composition={"plain": "plain_example"}, tags=[])
+    plain_text_template_model = Template(
+        id_=PLAIN_TEXT_TEMPLATE_ID,
+        schema={"type": "object", "properties": {"plain": {"type": "string"}}},
+        type_=MIMETypeEnum.HTML_MIME.value,
+        metadata={},
+        example_composition={"plain": "plain_example"},
+        tags=[],
+    )
     db.add(plain_text_template_model)
 
-    png_image_template_model = Template(id_=PNG_IMAGE_TEMPLATE_ID,
-                                        schema={"type": "object",
-                                                "properties": {}
-                                                },
-                                        type_=MIMETypeEnum.HTML_MIME.value, metadata={}, example_composition={}, tags=[])
+    png_image_template_model = Template(
+        id_=PNG_IMAGE_TEMPLATE_ID,
+        schema={"type": "object", "properties": {}},
+        type_=MIMETypeEnum.HTML_MIME.value,
+        metadata={},
+        example_composition={},
+        tags=[],
+    )
     db.add(png_image_template_model)
 
-    no_image_template_model = Template(id_=NO_IMAGE_TEMPLATE_ID,
-                                       schema={"type": "object",
-                                               "properties": {}
-                                               },
-                                       type_=MIMETypeEnum.HTML_MIME.value, metadata={}, example_composition={}, tags=[])
+    no_image_template_model = Template(
+        id_=NO_IMAGE_TEMPLATE_ID,
+        schema={"type": "object", "properties": {}},
+        type_=MIMETypeEnum.HTML_MIME.value,
+        metadata={},
+        example_composition={},
+        tags=[],
+    )
     db.add(no_image_template_model)
 
-    qr_code_template_model = Template(id_=QR_CODE_TEMPLATE_ID,
-                                      schema={"type": "object",
-                                              "properties": {}
-                                              },
-                                      type_=MIMETypeEnum.HTML_MIME.value, metadata={"qr_entries": ["qr_code"]},
-                                      example_composition={}, tags=[])
+    qr_code_template_model = Template(
+        id_=QR_CODE_TEMPLATE_ID,
+        schema={"type": "object", "properties": {}},
+        type_=MIMETypeEnum.HTML_MIME.value,
+        metadata={"qr_entries": ["qr_code"]},
+        example_composition={},
+        tags=[],
+    )
     db.add(qr_code_template_model)
     db.commit()
 
@@ -125,132 +127,79 @@ def template_test_examples(client_with_jinjaenv: TestClient, db: Session):
     db.commit()
 
 
-
 @pytest.mark.usefixtures("template_test_examples")
 class TestCompose:
-    COMPOSE_ENDPOINT = "/template/{0}/compose"
-    EXAMPLE_COMPOSE_ENDPOINT = "/template/{0}/example"
+    COMPOSE_ENDPOINT = "/templates/{0}/compose"
+    EXAMPLE_COMPOSE_ENDPOINT = "/templates/{0}/example"
 
     def test_compose_plain_ok(self, client_with_jinjaenv: TestClient):
         expected_text = "This is some plain text"
         json_request = {"plain": expected_text}
-        response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID), json=json_request)
+        response = client_with_jinjaenv.post(
+            self.COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID), json=json_request
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
         pdf_reader = PdfReader(io.BytesIO(response.content))
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
 
-
     def test_compose_image_exists(self, client_with_jinjaenv):
-        def get_images_from_template(template_id: str):
-            response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(template_id), json={})
-            assert response.content is not None
-            assert response.status_code == status.HTTP_200_OK
-            pdf_reader = PdfReader(io.BytesIO(response.content))
-            images_ = []
-            for page in pdf_reader.pages:
-                for image in page.images:
-                    images_.append(image)
-            return images_
+        response = client_with_jinjaenv.post(
+            self.COMPOSE_ENDPOINT.format(PNG_IMAGE_TEMPLATE_ID), json={}
+        )
+        assert response.content is not None
+        assert response.status_code == status.HTTP_200_OK
+        pdf_reader = PdfReader(io.BytesIO(response.content))
 
-        images = get_images_from_template(PNG_IMAGE_TEMPLATE_ID)
-        assert len(images) == 1
+        assert len(pdf_reader.pages) == 1
+        assert len(pdf_reader.pages[0].images) == 1
 
-        images = get_images_from_template(NO_IMAGE_TEMPLATE_ID)
-        assert len(images) == 0
+    def test_compose_no_image(self, client_with_jinjaenv):
+        response = client_with_jinjaenv.post(
+            self.COMPOSE_ENDPOINT.format(NO_IMAGE_TEMPLATE_ID), json={}
+        )
+        assert response.content is not None
+        assert response.status_code == status.HTTP_200_OK
+        pdf_reader = PdfReader(io.BytesIO(response.content))
+
+        assert len(pdf_reader.pages) == 1
+        assert len(pdf_reader.pages[0].images) == 0
 
     def test_example_ok(self, client_with_jinjaenv, db: Session):
         test_template = db.query(Template).filter_by(id=PLAIN_TEXT_TEMPLATE_ID).one()
         expected_text = test_template.example_composition["plain"]
 
-        response = client_with_jinjaenv.get(self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID))
+        response = client_with_jinjaenv.get(
+            self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.content is not None
         pdf_reader = PdfReader(io.BytesIO(response.content))
         real_text = "".join(page.extract_text() or "" for page in pdf_reader.pages)
         assert real_text.strip() == expected_text
-
-    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
-    def test_resize_ok(self, client_with_jinjaenv):
-        error = 1
-        expected_resize = 200
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.content is not None
-        with Image.open(io.BytesIO(response.content)) as img:
-            width, height = img.size
-        expected_resolution = height / width
-        assert height != expected_resize
-        assert width != expected_resize
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?width={expected_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-
-        def maintains_aspect_ratio(response):
-            assert response.status_code == status.HTTP_200_OK
-            assert response.content is not None
-            with Image.open(io.BytesIO(response.content)) as img_:
-                width_, height_ = img_.size
-            real_resolution = height_ / width_
-            assert isclose(expected_resolution, real_resolution, abs_tol=error / 10)
-            return width_, height_
-
-        real_width, _ = maintains_aspect_ratio(response)
-        assert isclose(expected_resize, real_width, abs_tol=error)
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}?height={expected_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-        _, real_height = maintains_aspect_ratio(response)
-        assert isclose(expected_resize, real_height, abs_tol=error)
-
-    @pytest.mark.skip(reason="PNG composition service is temporarily unavailable")
-    def test_resize_nok(self, client_with_jinjaenv):
-        intended_resize = 200
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
-            f"?width={intended_resize}&height={intended_resize}",
-            headers={"custom-accept": MIMETypeEnum.PNG_MIME.value}
-        )
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"detail": "Specifying both width and height compromises the template's aspect ratio"}
-
-        response = client_with_jinjaenv.get(
-            f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}"
-            f"?width={intended_resize}",
-            headers={"custom-accept": MIMETypeEnum.PDF_MIME.value}
-        )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json() == {"detail": f"Resizing unsupported on provided mime_type: {MIMETypeEnum.PDF_MIME.value}"}
 
     def test_unsupported_mimetype(self, client_with_jinjaenv):
         jpeg_mimetype = "image/jpeg"
 
         response = client_with_jinjaenv.get(
             f"{self.EXAMPLE_COMPOSE_ENDPOINT.format(PLAIN_TEXT_TEMPLATE_ID)}",
-            headers={"custom-accept": jpeg_mimetype}
+            headers={"custom-accept": jpeg_mimetype},
         )
 
         assert response.status_code == status.HTTP_406_NOT_ACCEPTABLE
-        assert response.json() == {"detail": f"The given mime type '{jpeg_mimetype}' is not supported."}
+        assert response.json() == {
+            "detail": f"The given mime type '{jpeg_mimetype}' is not supported."
+        }
 
     def test_compose_qr_code_exists(self, client_with_jinjaenv):
-        response = client_with_jinjaenv.post(self.COMPOSE_ENDPOINT.format(QR_CODE_TEMPLATE_ID), json={"qr_code": "qr_url.com"})
+        response = client_with_jinjaenv.post(
+            self.COMPOSE_ENDPOINT.format(QR_CODE_TEMPLATE_ID),
+            json={"qr_code": "qr_url.com"},
+        )
         assert response.content is not None
         assert response.status_code == status.HTTP_200_OK
 
         pdf_reader = PdfReader(io.BytesIO(response.content))
-        images_ = []
-        for page in pdf_reader.pages:
-            for image in page.images:
-                images_.append(image)
-        assert len(images_) == 1
+        assert len(pdf_reader.pages) == 1
+        assert len(pdf_reader.pages[0].images) == 1

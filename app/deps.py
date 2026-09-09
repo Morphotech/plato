@@ -1,10 +1,12 @@
-from typing import Generator
-from fastapi import Request
+from collections.abc import Generator
+from functools import lru_cache
+
+from jinja2 import Environment as JinjaEnv
 from sqlalchemy.orm import Session
 
 from app.db.session import db_session
-from app.file_storage import PlatoFileStorage
-from jinja2 import Environment as JinjaEnv
+from app.settings import get_settings
+from app.util.setup_util import create_template_environment
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -15,37 +17,12 @@ def get_db() -> Generator[Session, None, None]:
         yield db
 
 
-def get_file_storage(request: Request) -> PlatoFileStorage:
+@lru_cache
+def get_jinja_env() -> JinjaEnv:
     """
-    Retrieves the file storage instance from the request's application state.
-
-    :param request: The FastAPI request object
-    :type request: Request
-
-    :return: The file storage instance
-    :rtype: PlatoFileStorage
-    """
-    return request.app.state.file_storage
-
-def get_jinja_env(request: Request) -> JinjaEnv:
-    """
-    Retrieves the Jinja environment from the request's application state.
-
-    :param request: The FastAPI request object
-    :type request: Request
+    Builds (once) the Jinja environment used to render templates, from settings.
 
     :return: The Jinja environment
     :rtype: JinjaEnv
     """
-    return request.app.state.jinja_env
-
-def get_template_static_directory(request: Request) -> str:
-    """
-    Retrieves the static directory for templates from the request's application state.
-
-    :param request: The FastAPI request object
-    :type request: Request
-
-    :return: The static directory path for templates
-    """
-    return request.app.state.template_static_directory
+    return create_template_environment(get_settings().TEMPLATE_DIRECTORY)
