@@ -35,8 +35,18 @@ jmespath = "^1.1.0"
 pytest = "~9.1.1"
 coverage = "~7.16.0"
 testcontainers = "^4.15.0"
-blinker = "1.9.0"
 pypdf = "^6.16.2"
+ruff = "^0.15.11"
+tox= "^4.61.2"
+
+# Static Typing
+mypy = "^2.3.1"
+mypy-extensions = "^1.1.0"
+types-psycopg2 = "^2.9.21.20251012"
+types-jsonschema = "^4.25.1.20251009"
+types-requests = "^2.32.4.20250913"
+types-qrcode = "^8.2.0.20260518"
+types-jmespath = "^1.1.0.20260724"
 
 [build-system]
 requires = ["poetry>=1.2"]

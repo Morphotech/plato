@@ -1,6 +1,9 @@
-from typing import List, Sequence
-from sqlalchemy import Column, String
-from sqlalchemy.dialects.postgresql import ENUM, JSONB, ARRAY
+from collections.abc import Sequence
+from typing import Any
+
+from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
 
@@ -23,33 +26,41 @@ class Template(Base):
         example_composition (dict): A dictionary containing example compose data for the template
         tags (list): A list of identifying tags for the template
     """
-    __tablename__ = "template"
-    id = Column(String, primary_key=True)
-    schema = Column(JSONB, nullable=False)
-    type = Column(ENUM("text/html", name="template_mime_type"), nullable=False)
-    metadata_ = Column(JSONB, name="metadata", nullable=True)
-    example_composition = Column(JSONB, nullable=False)
-    tags = Column(ARRAY(String), name="tags", nullable=False, server_default="{}")
 
-    def __init__(self, id_: str, schema: dict, type_: str,
-                 metadata: dict,
-                 example_composition: dict,
-                 tags: Sequence[str]):
+    __tablename__ = "template"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    schema: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    type: Mapped[str] = mapped_column(
+        ENUM("text/html", name="template_mime_type"), nullable=False
+    )
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, name="metadata", nullable=True
+    )
+    example_composition: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    tags: Mapped[list[str]] = mapped_column(
+        ARRAY(String), name="tags", nullable=False, server_default="{}"
+    )
+
+    def __init__(
+        self,
+        id_: str,
+        schema: dict,
+        type_: str,
+        metadata: dict,
+        example_composition: dict,
+        tags: Sequence[str],
+    ):
         self.id = id_
         self.schema = schema
         self.type = type_
         self.metadata_ = metadata
         self.example_composition = example_composition
-        self.tags = tags
+        self.tags = list(tags)
 
-
-    def get_qr_entries(self) -> List[str]:
+    def get_qr_entries(self) -> list[str]:
         """
         Fetches all the qr_entries for the template as a list comprised of JMESPath friendly strings
         Returns:
             List[str]
         """
-        return self.metadata_.get("qr_entries", [])
-
-    def __repr__(self):
-        return '<Template %r>' % self.id
+        return (self.metadata_ or {}).get("qr_entries", [])

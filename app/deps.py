@@ -1,5 +1,5 @@
+from collections.abc import Generator
 from functools import lru_cache
-from typing import Generator
 
 from jinja2 import Environment as JinjaEnv
 from sqlalchemy.orm import Session

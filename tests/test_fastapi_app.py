@@ -3,13 +3,19 @@ from unittest import mock
 from unittest.mock import MagicMock, mock_open
 
 import pytest
+from fastapi import FastAPI
+from google.cloud.storage import Client
+
 from app.fastapi_app import get_app
-from app.file_storage import FileStorageError, NoIndexTemplateFound, S3FileStorage, StorageType
+from app.file_storage import (
+    FileStorageError,
+    NoIndexTemplateFound,
+    S3FileStorage,
+    StorageType,
+)
 from app.models import Template
 from app.settings import get_settings
 from app.util.setup_util import InvalidFileStorageTypeException
-from fastapi import FastAPI
-from google.cloud.storage import Client
 
 settings = get_settings()
 
@@ -33,11 +39,17 @@ class TestGetApp:
     def test_get_app_s3_storage(self, restore_storage_type, db, monkeypatch):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.S3)
 
-        with mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials, \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
-            mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
-                                                     "aws_secret_access_key": "test_secret_key",
-                                                     "region_name": "test_region"}
+        with (
+            mock.patch(
+                "app.file_storage.S3FileStorage.get_aws_credentials"
+            ) as mock_get_aws_credentials,
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
+            mock_get_aws_credentials.return_value = {
+                "aws_access_key_id": "test_aws_key",
+                "aws_secret_access_key": "test_secret_key",
+                "region_name": "test_region",
+            }
             app = get_app()
 
         assert isinstance(app, FastAPI)
@@ -46,8 +58,10 @@ class TestGetApp:
     def test_get_app_gcs_storage(self, restore_storage_type, db, monkeypatch):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.GCS)
 
-        with mock.patch.object(Client, "from_service_account_json") as mock_init_client, \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
+        with (
+            mock.patch.object(Client, "from_service_account_json") as mock_init_client,
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
             mock_init_client.return_value = MagicMock(spec=Client)
             app = get_app()
 
@@ -57,31 +71,51 @@ class TestGetApp:
     def test_get_app_invalid_storage_type(self, restore_storage_type, db, monkeypatch):
         monkeypatch.setattr(settings, "STORAGE_TYPE", "not_a_real_storage_type")
 
-        with mock.patch("app.fastapi_app.db_session", return_value=db):
-            with pytest.raises(InvalidFileStorageTypeException):
-                get_app()
+        with (
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+            pytest.raises(InvalidFileStorageTypeException),
+        ):
+            get_app()
 
-    def test_get_app_s3_missing_credentials(self, restore_storage_type, db, monkeypatch):
+    def test_get_app_s3_missing_credentials(
+        self, restore_storage_type, db, monkeypatch
+    ):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.S3)
 
-        with mock.patch("builtins.open", side_effect=FileNotFoundError), \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
+        with (
+            mock.patch("builtins.open", side_effect=FileNotFoundError),
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
             with pytest.raises(FileStorageError) as exc:
                 get_app()
 
-            assert exc.value.args[0] == f"AWS credentials file not found at '{settings.CREDENTIALS_DIR}/aws_credentials.json'. Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs."
+            assert (
+                exc.value.args[0]
+                == f"AWS credentials file not found at '{settings.CREDENTIALS_DIR}/aws_credentials.json'. Expected a UTF-8 encoded JSON file containing AWS credential key/value pairs."
+            )
 
-    def test_get_app_gcs_missing_credentials(self, restore_storage_type, db, monkeypatch):
+    def test_get_app_gcs_missing_credentials(
+        self, restore_storage_type, db, monkeypatch
+    ):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.GCS)
 
-        with mock.patch.object(Client, "from_service_account_json", side_effect=FileNotFoundError), \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
+        with (
+            mock.patch.object(
+                Client, "from_service_account_json", side_effect=FileNotFoundError
+            ),
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
             with pytest.raises(FileStorageError) as exc:
                 get_app()
 
-            assert exc.value.args[0] == f"GCS service account key file not found at '{settings.CREDENTIALS_DIR}/service_account_key.json'. Expected a UTF-8 encoded JSON file containing GCS service account credentials."
+            assert (
+                exc.value.args[0]
+                == f"GCS service account key file not found at '{settings.CREDENTIALS_DIR}/service_account_key.json'. Expected a UTF-8 encoded JSON file containing GCS service account credentials."
+            )
 
-    def test_get_app_s3_invalid_credentials_json(self, restore_storage_type, db, monkeypatch):
+    def test_get_app_s3_invalid_credentials_json(
+        self, restore_storage_type, db, monkeypatch
+    ):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.S3)
 
         mock_aws_credentials_data = """\
@@ -92,44 +126,78 @@ class TestGetApp:
              """
         mock_aws_open = mock_open(read_data=mock_aws_credentials_data)
 
-        with mock.patch("builtins.open", mock_aws_open), \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
+        with (
+            mock.patch("builtins.open", mock_aws_open),
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
             with pytest.raises(FileStorageError) as exc:
                 get_app()
 
-            assert exc.value.args[0] == f"Invalid JSON in AWS credentials file at '{settings.CREDENTIALS_DIR}/aws_credentials.json'. Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs."
+            assert (
+                exc.value.args[0]
+                == f"Invalid JSON in AWS credentials file at '{settings.CREDENTIALS_DIR}/aws_credentials.json'. Expected a UTF-8 encoded JSON object containing AWS credential key/value pairs."
+            )
 
-    def test_get_app_gcs_invalid_credentials_json(self, restore_storage_type, db, monkeypatch):
+    def test_get_app_gcs_invalid_credentials_json(
+        self, restore_storage_type, db, monkeypatch
+    ):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.GCS)
 
-        with mock.patch.object(Client, "from_service_account_json",
-                              side_effect=json.JSONDecodeError("Expecting value", "", 0)), \
-             mock.patch("app.fastapi_app.db_session", return_value=db):
+        with (
+            mock.patch.object(
+                Client,
+                "from_service_account_json",
+                side_effect=json.JSONDecodeError("Expecting value", "", 0),
+            ),
+            mock.patch("app.fastapi_app.db_session", return_value=db),
+        ):
             with pytest.raises(FileStorageError) as exc:
                 get_app()
 
-            assert exc.value.args[0] == f"Invalid JSON in GCS service account key file at '{settings.CREDENTIALS_DIR}/service_account_key.json'. Expected a UTF-8 encoded JSON object containing GCS service account credentials."
+            assert (
+                exc.value.args[0]
+                == f"Invalid JSON in GCS service account key file at '{settings.CREDENTIALS_DIR}/service_account_key.json'. Expected a UTF-8 encoded JSON object containing GCS service account credentials."
+            )
 
     @mock.patch.object(S3FileStorage, "get_file")
-    def test_get_app_s3_no_index_template_found(self, mock_s3_get_file, restore_storage_type, db, monkeypatch):
+    def test_get_app_s3_no_index_template_found(
+        self, mock_s3_get_file, restore_storage_type, db, monkeypatch
+    ):
         monkeypatch.setattr(settings, "STORAGE_TYPE", StorageType.S3)
 
         # folder has static assets but is missing the {id}.html index file
-        mock_s3_get_file.return_value = {"/example_template/static/abc_1": b"static content"}
-        template = Template(id_="example_template", schema={}, type_="text/html", tags=[], metadata={},
-                            example_composition={})
+        mock_s3_get_file.return_value = {
+            "/example_template/static/abc_1": b"static content"
+        }
+        template = Template(
+            id_="example_template",
+            schema={},
+            type_="text/html",
+            tags=[],
+            metadata={},
+            example_composition={},
+        )
 
         db.add(template)
         db.commit()
         try:
-            with mock.patch("app.file_storage.S3FileStorage.get_aws_credentials") as mock_get_aws_credentials, \
-                 mock.patch("app.fastapi_app.db_session", return_value=db):
-                mock_get_aws_credentials.return_value = {"aws_access_key_id": "test_aws_key",
-                                                         "aws_secret_access_key": "test_secret_key",
-                                                         "region_name": "test_region"}
+            with (
+                mock.patch(
+                    "app.file_storage.S3FileStorage.get_aws_credentials"
+                ) as mock_get_aws_credentials,
+                mock.patch("app.fastapi_app.db_session", return_value=db),
+            ):
+                mock_get_aws_credentials.return_value = {
+                    "aws_access_key_id": "test_aws_key",
+                    "aws_secret_access_key": "test_secret_key",
+                    "region_name": "test_region",
+                }
                 with pytest.raises(NoIndexTemplateFound) as exc:
                     get_app()
-                assert exc.value.args[0] == f"No index template file found. Template_id: example_template"
+                assert (
+                    exc.value.args[0]
+                    == "No index template file found. Template_id: example_template"
+                )
         finally:
             db.query(Template).filter_by(id="example_template").delete()
             db.commit()

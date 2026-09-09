@@ -1,5 +1,3 @@
-from typing import List
-
 from jmespath import search
 from qrcode import make
 
@@ -20,7 +18,7 @@ def render_qr_codes(template: Template, output_folder: str, compose_data: dict) 
     """
     qr_schema_paths = template.get_qr_entries()
 
-    def set_nested(key_list: List[str], dict_: dict, value: str):
+    def set_nested(key_list: list[str], dict_: dict, value: str) -> None:
         """
         Sets dict_[key1, key2, ...] = value
 

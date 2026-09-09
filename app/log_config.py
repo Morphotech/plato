@@ -1,13 +1,13 @@
 import logging.config
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from app.settings import get_settings
 
 APP_LOGGER_NAME = "app"
 
 
-def _build_log_config() -> Dict[str, Any]:
+def _build_log_config() -> dict[str, Any]:
     settings = get_settings()
 
     log_file_path = Path(f"{settings.DATA_DIR}/logs/app.log")

@@ -101,7 +101,7 @@ If successful, the HTTP response is a 200 OK, along with the template.
 ## Compose File
  
 ```shell
-curl -X POST "http://localhost:8000/templates/<template_id>/compose" -H  "accept: <mime_type>" -H "Content-Type: application/json" -d "{\"recipient_name\": \"Alan Turing\"}"
+curl -X POST "http://localhost:8000/templates/<template_id>/compose" -H  "custom-accept: <mime_type>" -H "Content-Type: application/json" -d "{\"recipient_name\": \"Alan Turing\"}"
 ```
 
 ```python
@@ -109,7 +109,7 @@ file = plato_client.compose(template_id, compose_data, mime_type)
 ```
 
 Composes a template into a file of a specific type by filling in the placeholders with the intended data. The type of
-the file to compose can be defined by the accept header, and is expected to be in MIME format. 
+the file to compose can be defined by the custom-accept header, and is expected to be in MIME format. 
 It is currently possible to generate a file of two different types:
 
 * HTML: text/html
@@ -120,8 +120,8 @@ Other parameters include:
     Parameter   | Type   | Optional | Description                              
     ----------- | ------ | -------- | -----------------------------
     template_id | Path   | No       | ID of the template to compose.
-    schema      | Body   | No       | Json containing the data to add to the template, according to template schema.
-    accept      | Header | No       | Type of file to create.
+    (request body) | Body | No     | The full JSON body containing the data to fill in the template, according to the template's schema.
+    custom-accept | Header | No     | Type of file to create.
 
 ### HTTP Request
 
@@ -143,7 +143,7 @@ If successful, the HTTP response is a 200 OK, along with the file.
 ## Compose Example
  
 ```shell
-curl -X GET "http://localhost:8000/templates/<template_id>/example" -H  "accept: <mime_type>
+curl -X GET "http://localhost:8000/templates/<template_id>/example" -H  "custom-accept: <mime_type>
 ```
 
 ```python
@@ -151,7 +151,7 @@ file = plato_client.compose(template_id, compose_data, mime_type)
 ```
 
 Composes a template into an example file of a specific type. The placeholders are filled in with example data
-that is configured directly in the database. The type of the file to compose can be defined by the accept header, 
+that is configured directly in the database. The type of the file to compose can be defined by the custom-accept header, 
 and is expected to be in MIME format. It is currently possible to generate a file of two different types:
 
 * HTML: text/html
@@ -162,7 +162,7 @@ Other parameters include:
     Parameter   | Type   | Optional | Description                              
     ----------- | ------ | -------- | -----------------------------
     template_id | Path   | No       | ID of the template to compose.
-    accept      | Header | No       | Type of file to create.
+    custom-accept | Header | No     | Type of file to create.
 
 ### HTTP Request
 

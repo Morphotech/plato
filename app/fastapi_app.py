@@ -19,13 +19,17 @@ def get_app() -> FastAPI:
         FastAPI: the configured app instance.
     """
     settings = get_settings()
-    logger.info(f"Plato starting up (storage={settings.STORAGE_TYPE}, template_directory={settings.TEMPLATE_DIRECTORY})")
+    logger.info(
+        f"Plato starting up (storage={settings.STORAGE_TYPE}, template_directory={settings.TEMPLATE_DIRECTORY})"
+    )
 
     fastapi_app = FastAPI()
 
     file_storage = initialize_file_storage(settings.STORAGE_TYPE, settings.BUCKET_NAME)
     with db_session() as db:
-        file_storage.load_templates(settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db)
+        file_storage.load_templates(
+            settings.TEMPLATE_DIRECTORY, settings.TEMPLATE_DIRECTORY_NAME, db
+        )
 
     fastapi_app.include_router(templates_router)
 
