@@ -173,10 +173,10 @@ To see the available options for each command, you can run `python app/cli.py <c
 
 ## Publishing a new image version
 
-1. Guarantee the code is working and all tests are passing (especially in docker! If any test fails, fix it before proceeding):
+1. Guarantee the code is working and all tests are passing (If any test fails, fix it before proceeding):
     ```bash
+    tox
     docker compose build plato-api
-    docker compose -f docker-compose.ci.yml run --rm test-plato
     ```
    
 2. Update the version in `pyproject.toml` file, according to the [Calendar Versioning](https://calver.org/) scheme.
