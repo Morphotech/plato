@@ -71,6 +71,7 @@ jobs:
           poetry run mypy --config-file mypy.ini app
 
       - name: SonarQube Scan
+        if: github.actor != 'dependabot[bot]'
         uses: SonarSource/sonarqube-scan-action@v6.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_KEY }}
