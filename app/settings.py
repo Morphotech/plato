@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         return (
             v
             or PostgresDsn.build(
-                scheme="postgresql",
+                scheme="postgresql+psycopg",
                 username=values.data["DB_USERNAME"],
                 password=values.data["DB_PASSWORD"],
                 host=values.data["DB_HOST"],

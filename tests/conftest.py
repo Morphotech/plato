@@ -7,7 +7,7 @@ from jinja2 import DictLoader, select_autoescape
 from jinja2 import Environment as JinjaEnv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
 
 from app.db.base_class import Base
 from app.deps import get_db, get_jinja_env
@@ -27,7 +27,7 @@ def db():
     if settings.IN_DOCKER:
         yield from _setup_test_db(settings.SQLALCHEMY_DATABASE_URI)
     else:
-        context_manager = PostgresContainer(image=f"postgres:{settings.POSTGRES_VER}")
+        context_manager = PostgresContainer(image=f"postgres:{settings.POSTGRES_VER}", driver="psycopg")
         with context_manager:
             yield from _setup_test_db(context_manager.get_connection_url())
 
